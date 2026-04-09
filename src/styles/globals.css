@@ -1,0 +1,302 @@
+@import url('./fonts.css');
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --bg: #f5f5f5;
+  --surface: rgba(255, 255, 255, 0.8);
+  --surface-solid: #ffffff;
+  --border: #e5e5e5;
+  --text-primary: #0a0a0a;
+  --text-secondary: #737373;
+  --text-tertiary: #a3a3a3;
+  --accent: #141414;
+  --accent-destructive: #d44;
+  --type-note: #888888;
+  --type-bookmark: #4a9eff;
+  --type-image: #22c55e;
+  --type-wishlist: #f59e0b;
+  --font-mono: 'Geist Mono', 'SF Mono', 'Menlo', monospace;
+  --font-pixel: 'Geist Pixel', 'Geist Mono', 'SF Mono', monospace;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  --radius-card: 12px;
+  --radius-lightbox: 20px;
+  --radius-input: 4px;
+  --card-shadow: 0px 1px 2px -1px rgba(0, 0, 0, 0.06), 0px 0px 0px 1px rgba(0, 0, 0, 0.06), 0px 2px 4px 0px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme='dark'] {
+  --bg: #0a0a0a;
+  --surface: rgba(30, 30, 30, 0.8);
+  --surface-solid: #1e1e1e;
+  --border: #262626;
+  --text-primary: #fafafa;
+  --text-secondary: #a3a3a3;
+  --text-tertiary: #525252;
+  --accent: #fafafa;
+  --accent-destructive: #e55;
+  --type-note: #999999;
+  --type-bookmark: #5aafff;
+  --type-image: #34d67f;
+  --type-wishlist: #fbbf24;
+  --card-shadow: 0px 1px 2px -1px rgba(0, 0, 0, 0.2), 0px 0px 0px 1px rgba(255, 255, 255, 0.06), 0px 2px 4px 0px rgba(0, 0, 0, 0.15);
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  height: 100%;
+  min-height: 100%;
+  /* Opaque fill so the transparent desktop window doesn't show desktop gaps */
+  background: var(--bg);
+}
+
+.app-boot-error {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 32px;
+  text-align: center;
+  background: var(--bg);
+  color: var(--text-primary);
+}
+
+.app-boot-error__eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.app-boot-error__title {
+  font-size: 30px;
+  line-height: 1.05;
+  font-weight: 500;
+}
+
+.app-boot-error__message {
+  max-width: 720px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+::selection {
+  background: rgba(221, 68, 68, 0.15);
+}
+
+input,
+textarea,
+button {
+  font-family: inherit;
+  font-size: inherit;
+  border: none;
+  outline: none;
+  background: none;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--border) 76%, transparent);
+  border-radius: 3px;
+  transition: background 180ms ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--text-tertiary) 88%, transparent);
+}
+
+/* App layout */
+.app-layout {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+  transition: grid-template-columns 220ms ease;
+}
+
+.app-layout--sidebar-collapsed {
+  grid-template-columns: 0 1fr;
+}
+
+.app-layout--vault-setup {
+  display: flex;
+}
+
+.app-layout--vault-setup .app-main {
+  width: 100%;
+}
+
+.app-sidebar-shell {
+  min-width: 0;
+  overflow: hidden;
+  height: 100%;
+}
+
+.app-main {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  /* Scroll areas add this so content clears the floating toolbar overlay */
+  --app-topbar-stack: 56px;
+}
+
+/*
+ * Scrollable regions: add class `scroll-area` to any element that uses overflow
+ * auto/scroll so scrollbar-gutter reserves track width and layout doesn’t shift
+ * when scrollbars appear. Pairs with global ::-webkit-scrollbar { width: 6px }.
+ */
+.scroll-area {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin; /* Firefox — pairs with ::-webkit-scrollbar width */
+}
+
+/* FAB menu */
+.fab-container {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  z-index: 50;
+}
+
+.fab-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: rgba(0, 0, 0, 0);
+  transition: background 250ms ease;
+}
+
+.fab-backdrop--visible {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.fab-add {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--text-primary);
+  color: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  transition: width 300ms cubic-bezier(0.22, 1.2, 0.64, 1),
+              height 300ms cubic-bezier(0.22, 1.2, 0.64, 1),
+              box-shadow 150ms ease;
+}
+
+.fab-add:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.fab-add svg {
+  transition: transform 300ms cubic-bezier(0.22, 1.2, 0.64, 1);
+}
+
+.fab-add--open svg {
+  transform: rotate(45deg);
+}
+
+.fab-add--open {
+  width: 40px;
+  height: 40px;
+}
+
+.fab-item {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 14px;
+  white-space: nowrap;
+  background: var(--surface-solid);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: none;
+  opacity: 0;
+  transform: scale(0.5);
+  pointer-events: none;
+  /* Collapse: fast, bottom-first (reverse stagger — top items close first) */
+  transition: bottom 250ms cubic-bezier(0.4, 0, 0.2, 1),
+              right 250ms cubic-bezier(0.4, 0, 0.2, 1),
+              transform 200ms cubic-bezier(0.4, 0, 1, 1),
+              opacity 150ms ease,
+              background 150ms ease,
+              color 150ms ease;
+  transition-delay: calc((3 - var(--fab-i)) * 30ms);
+  z-index: 1;
+}
+
+.fab-item--open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+  /* Expand: spring out, bottom-first stagger (closest to FAB first) */
+  transition: bottom 350ms cubic-bezier(0.22, 1.2, 0.64, 1),
+              right 350ms cubic-bezier(0.22, 1.2, 0.64, 1),
+              transform 350ms cubic-bezier(0.22, 1.2, 0.64, 1),
+              opacity 200ms ease,
+              background 150ms ease,
+              color 150ms ease;
+  transition-delay: calc(var(--fab-i) * 50ms);
+}
+
+/* Vertical stack — items stack above the FAB
+   When open, backdrop is 1st child, so items are nth-child(2)–(5) */
+.fab-item--open:nth-child(5) { bottom: 52px; right: 2px; }
+.fab-item--open:nth-child(4) { bottom: 88px; right: 2px; }
+.fab-item--open:nth-child(3) { bottom: 124px; right: 2px; }
+.fab-item--open:nth-child(2) { bottom: 160px; right: 2px; }
+
+.fab-item:hover {
+  background: var(--text-primary);
+  color: var(--bg);
+}

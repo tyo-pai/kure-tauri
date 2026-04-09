@@ -1,0 +1,15 @@
+node_modules
+out
+dist
+dist-node
+*.db
+.DS_Store
+.context
+.codex
+.vscode
+src-tauri/target
+src-tauri/gen
+
+# Expo native projects (regenerate with `expo prebuild`)
+mobile/ios
+mobile/android

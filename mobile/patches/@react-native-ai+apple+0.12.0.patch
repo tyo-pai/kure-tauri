@@ -1,0 +1,275 @@
+diff --git a/node_modules/@react-native-ai/apple/lib/commonjs/NativeAppleEmbeddings.js b/node_modules/@react-native-ai/apple/lib/commonjs/NativeAppleEmbeddings.js
+index a6161e9..4dab301 100644
+--- a/node_modules/@react-native-ai/apple/lib/commonjs/NativeAppleEmbeddings.js
++++ b/node_modules/@react-native-ai/apple/lib/commonjs/NativeAppleEmbeddings.js
+@@ -5,5 +5,11 @@ Object.defineProperty(exports, "__esModule", {
+ });
+ exports.default = void 0;
+ var _reactNative = require("react-native");
+-var _default = exports.default = _reactNative.TurboModuleRegistry.getEnforcing('NativeAppleEmbeddings');
++const nativeAppleEmbeddings = _reactNative.TurboModuleRegistry.get('NativeAppleEmbeddings');
++var _default = exports.default = nativeAppleEmbeddings ?? {
++  prepare: async () => {},
++  generateEmbeddings: async () => {
++    throw new Error('NativeAppleEmbeddings is not linked (embeddings are optional for Stash mobile)');
++  }
++};
+ //# sourceMappingURL=NativeAppleEmbeddings.js.map
+\ No newline at end of file
+diff --git a/node_modules/@react-native-ai/apple/lib/commonjs/NativeAppleSpeech.js b/node_modules/@react-native-ai/apple/lib/commonjs/NativeAppleSpeech.js
+index 6a8401b..e596d63 100644
+--- a/node_modules/@react-native-ai/apple/lib/commonjs/NativeAppleSpeech.js
++++ b/node_modules/@react-native-ai/apple/lib/commonjs/NativeAppleSpeech.js
+@@ -6,8 +6,8 @@ Object.defineProperty(exports, "__esModule", {
+ exports.default = void 0;
+ var _reactNative = require("react-native");
+ var _utils = require("./utils");
+-const NativeAppleSpeech = _reactNative.TurboModuleRegistry.getEnforcing('NativeAppleSpeech');
+-var _default = exports.default = {
++const NativeAppleSpeech = _reactNative.TurboModuleRegistry.get('NativeAppleSpeech');
++var _default = exports.default = NativeAppleSpeech ? {
+   getVoices: NativeAppleSpeech.getVoices,
+   generate: async (text, options = {}) => {
+     const result = await globalThis.__apple__llm__generate_audio__(text, options);
+@@ -18,5 +18,10 @@ var _default = exports.default = {
+       formatType: result.formatType
+     });
+   }
++} : {
++  getVoices: async () => [],
++  generate: async () => {
++    throw new Error('NativeAppleSpeech is not linked');
++  }
+ };
+ //# sourceMappingURL=NativeAppleSpeech.js.map
+\ No newline at end of file
+diff --git a/node_modules/@react-native-ai/apple/lib/commonjs/NativeAppleTranscription.js b/node_modules/@react-native-ai/apple/lib/commonjs/NativeAppleTranscription.js
+index f0f87af..863f88e 100644
+--- a/node_modules/@react-native-ai/apple/lib/commonjs/NativeAppleTranscription.js
++++ b/node_modules/@react-native-ai/apple/lib/commonjs/NativeAppleTranscription.js
+@@ -5,10 +5,16 @@ Object.defineProperty(exports, "__esModule", {
+ });
+ exports.default = void 0;
+ var _reactNative = require("react-native");
+-const NativeAppleTranscription = _reactNative.TurboModuleRegistry.getEnforcing('NativeAppleTranscription');
+-var _default = exports.default = {
++const NativeAppleTranscription = _reactNative.TurboModuleRegistry.get('NativeAppleTranscription');
++var _default = exports.default = NativeAppleTranscription ? {
+   transcribe: (data, language) => globalThis.__apple__llm__transcribe__(data, language),
+   prepare: NativeAppleTranscription.prepare,
+   isAvailable: NativeAppleTranscription.isAvailable
++} : {
++  transcribe: async () => {
++    throw new Error('NativeAppleTranscription is not linked');
++  },
++  prepare: async () => {},
++  isAvailable: () => false
+ };
+ //# sourceMappingURL=NativeAppleTranscription.js.map
+\ No newline at end of file
+diff --git a/node_modules/@react-native-ai/apple/lib/module/NativeAppleEmbeddings.js b/node_modules/@react-native-ai/apple/lib/module/NativeAppleEmbeddings.js
+index 4194780..3a2ce59 100644
+--- a/node_modules/@react-native-ai/apple/lib/module/NativeAppleEmbeddings.js
++++ b/node_modules/@react-native-ai/apple/lib/module/NativeAppleEmbeddings.js
+@@ -1,5 +1,11 @@
+ "use strict";
+ 
+ import { TurboModuleRegistry } from 'react-native';
+-export default TurboModuleRegistry.getEnforcing('NativeAppleEmbeddings');
++const _impl = TurboModuleRegistry.get('NativeAppleEmbeddings');
++export default _impl ?? {
++  prepare: async () => {},
++  generateEmbeddings: async () => {
++    throw new Error('NativeAppleEmbeddings is not linked (embeddings-only; chat uses NativeAppleLLM)');
++  },
++};
+ //# sourceMappingURL=NativeAppleEmbeddings.js.map
+\ No newline at end of file
+diff --git a/node_modules/@react-native-ai/apple/lib/module/NativeAppleSpeech.js b/node_modules/@react-native-ai/apple/lib/module/NativeAppleSpeech.js
+index e1dd8e2..04a7ff2 100644
+--- a/node_modules/@react-native-ai/apple/lib/module/NativeAppleSpeech.js
++++ b/node_modules/@react-native-ai/apple/lib/module/NativeAppleSpeech.js
+@@ -2,17 +2,24 @@
+ 
+ import { TurboModuleRegistry } from 'react-native';
+ import { addWAVHeader } from './utils';
+-const NativeAppleSpeech = TurboModuleRegistry.getEnforcing('NativeAppleSpeech');
+-export default {
+-  getVoices: NativeAppleSpeech.getVoices,
+-  generate: async (text, options = {}) => {
+-    const result = await globalThis.__apple__llm__generate_audio__(text, options);
+-    return addWAVHeader(result.data, {
+-      sampleRate: result.sampleRate,
+-      channels: result.channels,
+-      bitsPerSample: result.bitsPerSample,
+-      formatType: result.formatType
+-    });
+-  }
+-};
++const NativeAppleSpeech = TurboModuleRegistry.get('NativeAppleSpeech');
++export default NativeAppleSpeech
++  ? {
++      getVoices: NativeAppleSpeech.getVoices,
++      generate: async (text, options = {}) => {
++        const result = await globalThis.__apple__llm__generate_audio__(text, options);
++        return addWAVHeader(result.data, {
++          sampleRate: result.sampleRate,
++          channels: result.channels,
++          bitsPerSample: result.bitsPerSample,
++          formatType: result.formatType,
++        });
++      },
++    }
++  : {
++      getVoices: () => [],
++      generate: async () => {
++        throw new Error('NativeAppleSpeech is not linked');
++      },
++    };
+ //# sourceMappingURL=NativeAppleSpeech.js.map
+\ No newline at end of file
+diff --git a/node_modules/@react-native-ai/apple/lib/module/NativeAppleTranscription.js b/node_modules/@react-native-ai/apple/lib/module/NativeAppleTranscription.js
+index 23dba3e..99520ba 100644
+--- a/node_modules/@react-native-ai/apple/lib/module/NativeAppleTranscription.js
++++ b/node_modules/@react-native-ai/apple/lib/module/NativeAppleTranscription.js
+@@ -1,10 +1,18 @@
+ "use strict";
+ 
+ import { TurboModuleRegistry } from 'react-native';
+-const NativeAppleTranscription = TurboModuleRegistry.getEnforcing('NativeAppleTranscription');
+-export default {
+-  transcribe: (data, language) => globalThis.__apple__llm__transcribe__(data, language),
+-  prepare: NativeAppleTranscription.prepare,
+-  isAvailable: NativeAppleTranscription.isAvailable
+-};
++const NativeAppleTranscription = TurboModuleRegistry.get('NativeAppleTranscription');
++export default NativeAppleTranscription
++  ? {
++      transcribe: (data, language) => globalThis.__apple__llm__transcribe__(data, language),
++      prepare: NativeAppleTranscription.prepare,
++      isAvailable: NativeAppleTranscription.isAvailable,
++    }
++  : {
++      transcribe: async () => {
++        throw new Error('NativeAppleTranscription is not linked');
++      },
++      prepare: async () => {},
++      isAvailable: () => false,
++    };
+ //# sourceMappingURL=NativeAppleTranscription.js.map
+\ No newline at end of file
+diff --git a/node_modules/@react-native-ai/apple/src/NativeAppleEmbeddings.ts b/node_modules/@react-native-ai/apple/src/NativeAppleEmbeddings.ts
+index 7d74b05..be4d4d8 100644
+--- a/node_modules/@react-native-ai/apple/src/NativeAppleEmbeddings.ts
++++ b/node_modules/@react-native-ai/apple/src/NativeAppleEmbeddings.ts
+@@ -17,4 +17,15 @@ export interface Spec extends TurboModule {
+   generateEmbeddings(values: string[], language: string): Promise<number[][]>
+ }
+ 
+-export default TurboModuleRegistry.getEnforcing<Spec>('NativeAppleEmbeddings')
++const nativeAppleEmbeddings = TurboModuleRegistry.get<Spec>('NativeAppleEmbeddings')
++
++export default (
++  nativeAppleEmbeddings ?? {
++    prepare: async () => {},
++    generateEmbeddings: async () => {
++      throw new Error(
++        'NativeAppleEmbeddings is not linked (embeddings are optional for Stash mobile)'
++      )
++    },
++  }
++) as Spec
+diff --git a/node_modules/@react-native-ai/apple/src/NativeAppleSpeech.ts b/node_modules/@react-native-ai/apple/src/NativeAppleSpeech.ts
+index d52d024..f104061 100644
+--- a/node_modules/@react-native-ai/apple/src/NativeAppleSpeech.ts
++++ b/node_modules/@react-native-ai/apple/src/NativeAppleSpeech.ts
+@@ -22,8 +22,7 @@ export interface Spec extends TurboModule {
+   getVoices(): Promise<VoiceInfo[]>
+ }
+ 
+-const NativeAppleSpeech =
+-  TurboModuleRegistry.getEnforcing<Spec>('NativeAppleSpeech')
++const NativeAppleSpeech = TurboModuleRegistry.get<Spec>('NativeAppleSpeech')
+ 
+ interface AudioResult {
+   data: ArrayBufferLike
+@@ -40,21 +39,28 @@ declare global {
+   ): Promise<AudioResult>
+ }
+ 
+-export default {
+-  getVoices: NativeAppleSpeech.getVoices,
+-  generate: async (
+-    text: string,
+-    options: SpeechOptions = {}
+-  ): Promise<ArrayBufferLike> => {
+-    const result = await globalThis.__apple__llm__generate_audio__(
+-      text,
+-      options
+-    )
+-    return addWAVHeader(result.data, {
+-      sampleRate: result.sampleRate,
+-      channels: result.channels,
+-      bitsPerSample: result.bitsPerSample,
+-      formatType: result.formatType,
+-    })
+-  },
+-}
++export default NativeAppleSpeech
++  ? {
++      getVoices: NativeAppleSpeech.getVoices,
++      generate: async (
++        text: string,
++        options: SpeechOptions = {}
++      ): Promise<ArrayBufferLike> => {
++        const result = await globalThis.__apple__llm__generate_audio__(
++          text,
++          options
++        )
++        return addWAVHeader(result.data, {
++          sampleRate: result.sampleRate,
++          channels: result.channels,
++          bitsPerSample: result.bitsPerSample,
++          formatType: result.formatType,
++        })
++      },
++    }
++  : {
++      getVoices: async () => [],
++      generate: async () => {
++        throw new Error('NativeAppleSpeech is not linked')
++      },
++    }
+diff --git a/node_modules/@react-native-ai/apple/src/NativeAppleTranscription.ts b/node_modules/@react-native-ai/apple/src/NativeAppleTranscription.ts
+index 13332a0..6815e5d 100644
+--- a/node_modules/@react-native-ai/apple/src/NativeAppleTranscription.ts
++++ b/node_modules/@react-native-ai/apple/src/NativeAppleTranscription.ts
+@@ -24,13 +24,21 @@ declare global {
+   ): Promise<TranscriptionResult>
+ }
+ 
+-const NativeAppleTranscription = TurboModuleRegistry.getEnforcing<Spec>(
++const NativeAppleTranscription = TurboModuleRegistry.get<Spec>(
+   'NativeAppleTranscription'
+ )
+ 
+-export default {
+-  transcribe: (data: ArrayBufferLike, language: string) =>
+-    globalThis.__apple__llm__transcribe__(data, language),
+-  prepare: NativeAppleTranscription.prepare,
+-  isAvailable: NativeAppleTranscription.isAvailable,
+-}
++export default NativeAppleTranscription
++  ? {
++      transcribe: (data: ArrayBufferLike, language: string) =>
++        globalThis.__apple__llm__transcribe__(data, language),
++      prepare: NativeAppleTranscription.prepare,
++      isAvailable: NativeAppleTranscription.isAvailable,
++    }
++  : {
++      transcribe: async () => {
++        throw new Error('NativeAppleTranscription is not linked')
++      },
++      prepare: async () => {},
++      isAvailable: () => false,
++    }

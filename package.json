@@ -1,0 +1,59 @@
+{
+  "name": "stash",
+  "version": "1.0.0",
+  "description": "Intelligent Personal Knowledge Base",
+  "scripts": {
+    "dev": "npm exec -- tauri dev",
+    "build": "npm run build:url-metadata && npm run build:tauri",
+    "build:url-metadata": "npm run build --prefix packages/url-metadata",
+    "build:node-bridge": "npm exec -- esbuild node-bridge/bridge.ts --bundle --platform=node --packages=external --outfile=dist-node/bridge.cjs",
+    "dev:tauri": "vite --port 1420",
+    "build:tauri": "npm run build:node-bridge && vite build",
+    "tauri": "npm exec -- tauri",
+    "tauri:dev": "npm exec -- tauri dev",
+    "preview": "vite preview --port 1420",
+    "package": "npm run build:tauri && npm exec -- tauri build",
+    "package:dmg": "npm run build:tauri && npm exec -- tauri build --bundles dmg"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@cherrystudio/mac-system-ocr": "^0.2.7",
+    "@mdxeditor/editor": "^3.52.4",
+    "@meridius-labs/apple-on-device-ai": "^1.6.2",
+    "@paper-design/shaders-react": "^0.0.71",
+    "@phosphor-icons/react": "^2.1.10",
+    "@stash/url-metadata": "file:./packages/url-metadata",
+    "@tauri-apps/api": "^2.10.1",
+    "cheerio": "^1.2.0",
+    "chokidar": "^3.6.0",
+    "geist": "^1.7.0",
+    "gray-matter": "^4.0.3",
+    "minisearch": "^7.2.0",
+    "motion": "^12.38.0",
+    "node-vibrant": "^3.1.6",
+    "openai": "^6.27.0",
+    "react": "^19.2.4",
+    "react-color": "^2.19.3",
+    "react-dom": "^19.2.4",
+    "sharp": "^0.33.5",
+    "sql.js": "^1.14.1",
+    "tinycolor2": "^1.6.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.10.1",
+    "@types/react": "^19.2.14",
+    "@types/react-color": "^3.0.13",
+    "@types/react-dom": "^19.2.3",
+    "@types/tinycolor2": "^1.4.6",
+    "@vitejs/plugin-react": "^5.1.4",
+    "esbuild": "^0.27.0",
+    "made-refine": "^0.2.20",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1"
+  },
+  "overrides": {
+    "vite": "^7.3.1"
+  }
+}

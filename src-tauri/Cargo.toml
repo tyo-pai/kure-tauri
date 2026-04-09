@@ -1,0 +1,30 @@
+[package]
+name = "stash-tauri"
+version = "1.0.0"
+description = "Stash desktop shell"
+edition = "2021"
+
+[lib]
+name = "stash_tauri_lib"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[[bin]]
+name = "stash"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["devtools", "tray-icon", "image-png", "macos-private-api"] }
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+http = "1"
+mime_guess = "2"
+parking_lot = "0.12"
+rfd = "0.14"
+thiserror = "1"
+urlencoding = "2"
+opener = "0.8.4"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "webp"] }

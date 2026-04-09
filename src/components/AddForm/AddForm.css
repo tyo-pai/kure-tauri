@@ -1,0 +1,285 @@
+.add-form-overlay {
+  position: fixed;
+  inset: 0;
+  /* Above toolbar / preview / lightbox (≤100); below bookmark toasts when both show */
+  z-index: 10018;
+  background: rgba(0, 0, 0, 0.01);
+  -webkit-app-region: no-drag;
+}
+
+.add-form-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.2);
+  z-index: 10018;
+  animation: addFormFadeIn 200ms ease;
+  -webkit-app-region: no-drag;
+}
+
+@keyframes addFormFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.add-form-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 380px;
+  height: 100vh;
+  background: var(--bg);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 10019;
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.06);
+  animation: addFormSlideIn 250ms ease;
+  transition: width 250ms ease;
+  /* Required on macOS hiddenInset so header controls receive clicks instead of window drag */
+  -webkit-app-region: no-drag;
+}
+
+.add-form-panel--expanded {
+  width: calc(100vw - 200px);
+  box-shadow: none;
+}
+
+@keyframes addFormSlideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.add-form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  height: 40px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  -webkit-app-region: no-drag;
+}
+
+.add-form-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.add-form-header-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  opacity: 0.5;
+}
+
+.add-form-header-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all 150ms;
+  -webkit-app-region: no-drag;
+}
+
+.add-form-header-btn:hover {
+  background: var(--surface);
+  color: var(--text-secondary);
+}
+
+.add-form-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  max-width: 600px;
+}
+
+.add-form-panel--expanded .add-form-body {
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 24px 32px;
+}
+
+.add-form-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.add-form-tab {
+  padding: 6px 12px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 150ms;
+}
+
+.add-form-tab:hover {
+  color: var(--text-secondary);
+}
+
+.add-form-tab.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--accent);
+}
+
+.add-form-field {
+  margin-bottom: 10px;
+}
+
+.add-form-label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+  margin-bottom: 4px;
+}
+
+.add-form-input {
+  width: 100%;
+  padding: 7px 10px;
+  font-size: 12.5px;
+  color: var(--text-primary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-input);
+}
+
+.add-form-input:focus {
+  border-color: var(--text-tertiary);
+}
+
+.add-form-textarea {
+  width: 100%;
+  padding: 7px 10px;
+  font-size: 12.5px;
+  color: var(--text-primary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-input);
+  resize: vertical;
+  min-height: 80px;
+  font-family: var(--font-sans);
+  line-height: 1.55;
+}
+
+.add-form-textarea:focus {
+  border-color: var(--text-tertiary);
+}
+
+.add-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.add-form-cancel {
+  padding: 6px 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-input);
+  transition: all 150ms;
+}
+
+.add-form-cancel:hover {
+  border-color: var(--text-tertiary);
+}
+
+.add-form-submit {
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--surface);
+  background: var(--text-primary);
+  border-radius: var(--radius-input);
+  transition: opacity 150ms;
+}
+
+.add-form-submit:hover {
+  opacity: 0.85;
+}
+
+.add-form-submit:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.add-form-fetching {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  padding: 4px 0;
+}
+
+.add-form-fetched {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-secondary);
+  padding: 4px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.add-form-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.add-form-tag-chip {
+  padding: 2px 8px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 150ms;
+}
+
+.add-form-tag-chip:hover {
+  border-color: var(--text-tertiary);
+  color: var(--text-secondary);
+}
+
+.add-form-tag-chip.active {
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.add-form-new-tag {
+  display: inline-flex;
+}
+
+.add-form-tag-input {
+  width: 80px;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  border: 1px dashed var(--border);
+  border-radius: 3px;
+  background: transparent;
+}
+
+.add-form-tag-input:focus {
+  border-color: var(--text-tertiary);
+  border-style: solid;
+}

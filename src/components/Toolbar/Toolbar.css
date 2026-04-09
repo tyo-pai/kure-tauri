@@ -1,0 +1,417 @@
+/* Sidebar toggle: default inset; on macOS it sits just right of the traffic lights (hiddenInset title bar) */
+:root {
+  --toolbar-sidebar-toggle-left: 16px;
+}
+
+html[data-platform='darwin'] {
+  /* First pixel after the close / minimize / zoom cluster (hiddenInset) */
+  --toolbar-sidebar-toggle-left: 78px;
+  /* Slightly larger than native dots, still title-bar scale */
+  --toolbar-traffic-light-size: 20px;
+}
+
+/* Sidebar open: main column starts after the panel — sit beside it, no traffic-light inset */
+.toolbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 52px;
+  padding: 12px 16px 10px;
+  flex-shrink: 0;
+  overflow: visible;
+  z-index: 20;
+  border-bottom: none;
+  background: transparent;
+  -webkit-app-region: drag;
+  pointer-events: auto;
+}
+
+.toolbar-drag-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 0;
+  background: transparent;
+  -webkit-app-region: drag;
+  pointer-events: auto;
+}
+
+.toolbar-drag-zone--left {
+  left: 0;
+  right: calc(50% + 280px);
+}
+
+.toolbar-drag-zone--right {
+  left: calc(50% + 280px);
+  right: 0;
+}
+
+.toolbar-sidebar-wrap {
+  position: fixed;
+  left: var(--toolbar-sidebar-toggle-left);
+  top: 12px;
+  z-index: 25;
+  pointer-events: auto;
+}
+
+.toolbar-sidebar-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  top: -1px;
+  height: 36px;
+  padding: 0;
+  margin: 0;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  -webkit-app-region: no-drag;
+  transition: color 150ms, background 150ms;
+  z-index: 2;
+  pointer-events: auto;
+}
+
+.toolbar-sidebar-toggle:hover {
+  color: var(--text-primary);
+  background: var(--border);
+}
+
+.toolbar-sidebar-toggle:focus-visible {
+  outline: 2px solid var(--text-tertiary);
+  outline-offset: 2px;
+}
+
+.toolbar-sidebar-toggle-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: block;
+}
+
+/* Same row & footprint as the three window controls (macOS) */
+html[data-platform='darwin'] .toolbar-sidebar-wrap {
+  top: 7px;
+}
+
+html[data-platform='darwin'] .toolbar-sidebar-toggle {
+  width: var(--toolbar-traffic-light-size);
+  height: var(--toolbar-traffic-light-size);
+  min-width: var(--toolbar-traffic-light-size);
+  min-height: var(--toolbar-traffic-light-size);
+  border-radius: 50%;
+  color: var(--text-secondary);
+}
+
+html[data-platform='darwin'] .toolbar-sidebar-toggle:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--text-primary);
+}
+
+html[data-theme='dark'][data-platform='darwin'] .toolbar-sidebar-toggle:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+html[data-platform='darwin'] .toolbar-sidebar-toggle:focus-visible {
+  outline-offset: 1px;
+}
+
+html[data-platform='darwin'] .toolbar-sidebar-toggle-icon {
+  width: 11px;
+  height: 11px;
+}
+
+html[data-platform='darwin'] .toolbar-sidebar-toggle-icon line {
+  stroke-width: 1.85;
+}
+
+.toolbar-sidebar-nav-menu {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  padding-top: 6px;
+  z-index: 100;
+  min-width: 220px;
+  max-width: min(320px, calc(100vw - 32px));
+}
+
+.toolbar-sidebar-nav-menu-inner {
+  background: rgba(0, 0, 0, 0.7);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.22),
+    0 0 0 1px rgba(0, 0, 0, 0.06) inset;
+  max-height: min(420px, 70vh);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px 0;
+  -webkit-app-region: no-drag;
+}
+
+.toolbar-sidebar-nav-menu-inner::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 3px;
+}
+
+.toolbar-sidebar-nav-menu-inner::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.toolbar-sidebar-nav-section {
+  padding: 4px 0;
+}
+
+.toolbar-sidebar-nav-section + .toolbar-sidebar-nav-section {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin-top: 4px;
+  padding-top: 8px;
+}
+
+.toolbar-sidebar-nav-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.42);
+  padding: 4px 12px 8px;
+}
+
+.toolbar-sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 7px 12px;
+  margin: 0;
+  text-align: left;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.92);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.toolbar-sidebar-nav-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.toolbar-sidebar-nav-item.is-active {
+  color: rgba(255, 255, 255, 0.98);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.toolbar-sidebar-nav-count {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.45);
+  flex-shrink: 0;
+}
+
+/* Floating capsule: top center, dark glass.
+   No transform on this subtree — transform creates a backdrop root in Chromium and breaks
+   backdrop-filter on the color popover (and weakens the search pill glass). Center via .toolbar flex. */
+.toolbar-search {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(520px, calc(100vw - 96px));
+  max-width: min(520px, calc(100% - 96px));
+  box-sizing: border-box;
+  min-height: 36px;
+  padding: 8px 10px 8px 16px;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.7);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.18),
+    0 0 0 1px rgba(0, 0, 0, 0.06) inset;
+  -webkit-app-region: no-drag;
+  z-index: 1;
+  pointer-events: auto;
+}
+
+.toolbar-search-icon {
+  color: rgba(255, 255, 255, 0.45);
+  flex-shrink: 0;
+}
+
+.toolbar-search input {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.95);
+  background: transparent;
+}
+
+.toolbar-search input::placeholder {
+  color: rgba(255, 255, 255, 0.38);
+}
+
+.toolbar-search-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  margin: 0;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.58);
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease;
+  -webkit-app-region: no-drag;
+}
+
+.toolbar-search-clear:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.toolbar-search-clear:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.35);
+  outline-offset: 2px;
+}
+
+.toolbar-search-clear-icon {
+  display: block;
+  flex-shrink: 0;
+}
+
+.toolbar-semantic-badge {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: rgba(255, 180, 180, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  padding: 2px 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.toolbar-color {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  -webkit-app-region: no-drag;
+  overflow: visible;
+}
+
+.toolbar-color-trigger-shell {
+  position: relative;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+}
+
+.toolbar-color-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 150ms, border-color 150ms, color 150ms;
+}
+
+.toolbar-color-trigger:hover {
+  border-color: rgba(255, 255, 255, 0.35);
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.toolbar-color-swatch {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+
+/* Portaled to document.body so backdrop-filter on .grid-color-picker blurs the page */
+.toolbar-color-popover {
+  /* Shared with .grid-color-picker — concentric radii: inner = outer − inset */
+  --gcp-radius-outer: 18px;
+  --gcp-inset: 4px;
+
+  padding: 0;
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
+  overflow: visible;
+  -webkit-app-region: no-drag;
+  border-radius: var(--gcp-radius-outer);
+  background: transparent;
+  box-shadow: none;
+}
+
+.toolbar-color-popover--portal {
+  position: fixed;
+  z-index: 10000;
+  margin: 0;
+  right: auto;
+  bottom: auto;
+}
+
+.toolbar-color-icon {
+  flex-shrink: 0;
+}
+
+.toolbar-color-clear {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.65);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  transition: color 150ms, background 150ms, border-color 150ms;
+  -webkit-app-region: no-drag;
+}
+
+.toolbar-color-clear-icon {
+  display: block;
+  flex-shrink: 0;
+}
+
+.toolbar-color-clear:hover {
+  color: #fff;
+  background: rgba(40, 40, 40, 0.95);
+  border-color: rgba(255, 255, 255, 0.35);
+}

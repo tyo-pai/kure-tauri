@@ -1,0 +1,44 @@
+{
+  "name": "mobile",
+  "version": "1.0.0",
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "prebuild": "expo prebuild",
+    "postinstall": "patch-package",
+    "verify:vault-format": "npm --prefix ../packages/vault-io test"
+  },
+  "dependencies": {
+    "@react-native-ai/apple": "^0.12.0",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@shopify/react-native-skia": "2.4.18",
+    "@stash/url-metadata": "file:../packages/url-metadata",
+    "@stash/vault-io": "file:../packages/vault-io",
+    "ai": "^6.0.141",
+    "expo": "55.0.10-canary-20260327-0789fbc",
+    "expo-constants": "55.0.10-canary-20260327-0789fbc",
+    "expo-file-system": "55.0.13-canary-20260327-0789fbc",
+    "expo-linking": "55.0.10-canary-20260327-0789fbc",
+    "expo-router": "55.0.9-canary-20260327-0789fbc",
+    "expo-share-intent": "^6.0.0",
+    "expo-status-bar": "55.0.5-canary-20260327-0789fbc",
+    "openai": "^6.33.0",
+    "patch-package": "^8.0.1",
+    "react": "19.2.0",
+    "react-native": "0.83.4",
+    "react-native-animated-glow": "^3.0.1",
+    "react-native-gesture-handler": "~2.30.0",
+    "react-native-get-random-values": "~1.11.0",
+    "react-native-reanimated": "4.2.1",
+    "react-native-safe-area-context": "~5.6.2",
+    "react-native-screens": "~4.23.0"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "typescript": "~5.9.2"
+  },
+  "private": true
+}

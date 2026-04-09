@@ -1,0 +1,240 @@
+.shader-debug-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shader-debug-panel {
+  background: var(--surface, #fff);
+  border-radius: 16px;
+  width: 900px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3);
+}
+
+.shader-debug-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border, #e5e5e5);
+}
+
+.shader-debug-header h2 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+  font-family: var(--font-mono, monospace);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.shader-debug-header button {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  text-transform: uppercase;
+  background: none;
+  border: 1px solid var(--border, #e5e5e5);
+  border-radius: 6px;
+  padding: 4px 12px;
+  cursor: pointer;
+  color: var(--text-secondary, #666);
+}
+
+.shader-debug-layout {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 0;
+}
+
+.shader-debug-preview {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.shader-debug-card {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  background: #111;
+}
+
+.shader-debug-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.shader-debug-img-dither {
+  width: 100%;
+  height: 100%;
+}
+
+.shader-debug-img-dither canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.shader-debug-shader {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.shader-debug-shader canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.shader-debug-img-switcher {
+  display: flex;
+  gap: 6px;
+}
+
+.shader-debug-img-switcher button {
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  text-transform: uppercase;
+  background: none;
+  border: 1px solid var(--border, #e5e5e5);
+  border-radius: 4px;
+  padding: 3px 8px;
+  cursor: pointer;
+  color: var(--text-secondary, #666);
+}
+
+.shader-debug-img-switcher button.active {
+  background: var(--text-primary, #111);
+  color: var(--surface, #fff);
+  border-color: var(--text-primary, #111);
+}
+
+.shader-debug-controls {
+  padding: 16px;
+  border-left: 1px solid var(--border, #e5e5e5);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.shader-debug-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shader-debug-section-title {
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary, #999);
+  font-weight: 600;
+}
+
+.shader-debug-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.shader-debug-row label {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  color: var(--text-secondary, #666);
+  width: 48px;
+  flex-shrink: 0;
+}
+
+.shader-debug-row input[type="range"] {
+  flex: 1;
+  height: 4px;
+  -webkit-appearance: none;
+  background: var(--border, #ddd);
+  border-radius: 2px;
+  outline: none;
+}
+
+.shader-debug-row input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--text-primary, #333);
+  cursor: pointer;
+}
+
+.shader-debug-row select {
+  flex: 1;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  padding: 3px 6px;
+  border: 1px solid var(--border, #ddd);
+  border-radius: 4px;
+  background: var(--surface, #fff);
+  color: var(--text-primary, #333);
+  outline: none;
+}
+
+.shader-debug-row input[type="color"] {
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--border, #ddd);
+  border-radius: 4px;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.shader-debug-value {
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  color: var(--text-tertiary, #999);
+  width: 32px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.shader-debug-color-row input[type="range"] {
+  flex: 1;
+}
+
+.shader-debug-code {
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  line-height: 1.5;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 6px;
+  padding: 10px;
+  margin: 0;
+  white-space: pre;
+  overflow-x: auto;
+  color: var(--text-secondary, #555);
+}
+
+.shader-debug-copy {
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  text-transform: uppercase;
+  background: none;
+  border: 1px solid var(--border, #e5e5e5);
+  border-radius: 4px;
+  padding: 3px 8px;
+  cursor: pointer;
+  color: var(--text-secondary, #666);
+  align-self: flex-end;
+}
