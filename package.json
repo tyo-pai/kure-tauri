@@ -2,6 +2,14 @@
   "name": "stash",
   "version": "1.0.0",
   "description": "Intelligent Personal Knowledge Base",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tyo-pai/kure-tauri.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tyo-pai/kure-tauri/issues"
+  },
+  "homepage": "https://github.com/tyo-pai/kure-tauri",
   "scripts": {
     "dev": "npm exec -- tauri dev",
     "build": "npm run build:url-metadata && npm run build:tauri",

@@ -6,6 +6,7 @@ dist-node
 .DS_Store
 .context
 .codex
+.cursor
 .vscode
 src-tauri/target
 src-tauri/gen
