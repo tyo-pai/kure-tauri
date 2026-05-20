@@ -28,12 +28,15 @@
   "license": "ISC",
   "dependencies": {
     "@cherrystudio/mac-system-ocr": "^0.2.7",
+    "@hashintel/refractive": "^0.0.3",
     "@mdxeditor/editor": "^3.52.4",
     "@meridius-labs/apple-on-device-ai": "^1.6.2",
     "@paper-design/shaders-react": "^0.0.71",
     "@phosphor-icons/react": "^2.1.10",
     "@stash/url-metadata": "file:./packages/url-metadata",
     "@tauri-apps/api": "^2.10.1",
+    "agentation": "^3.0.2",
+    "border-beam": "^1.0.1",
     "cheerio": "^1.2.0",
     "chokidar": "^3.6.0",
     "geist": "^1.7.0",
@@ -47,7 +50,9 @@
     "react-dom": "^19.2.4",
     "sharp": "^0.33.5",
     "sql.js": "^1.14.1",
-    "tinycolor2": "^1.6.0"
+    "tinycolor2": "^1.6.0",
+    "vis-data": "^8.0.3",
+    "vis-network": "^10.0.2"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.10.1",

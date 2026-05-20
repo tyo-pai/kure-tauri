@@ -29,6 +29,7 @@ export interface IndexedItem {
   updated_at: string
   tags: string[]
   embedding: number[] | null
+  embeddingModel: string | null
   ai_summary: string
   ai_description: string
   ocr_text: string

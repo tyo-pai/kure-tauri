@@ -144,6 +144,38 @@
   margin-bottom: 2px;
 }
 
+.md-editor-content ul.contains-task-list,
+.md-editor-content ol.contains-task-list {
+  padding-left: 0;
+  margin-left: 0;
+  list-style: none;
+}
+
+.md-editor-content li.task-list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-left: 0;
+}
+
+.md-editor-content li.task-list-item::marker {
+  content: '';
+}
+
+.md-editor-content li.task-list-item input[type='checkbox'] {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  margin: 0.26em 0 0;
+  accent-color: #4a9eff;
+}
+
+.md-editor-content li.task-list-item > p,
+.md-editor-content li.task-list-item > span {
+  flex: 1 1 auto;
+  margin: 0;
+}
+
 .md-editor-content blockquote {
   margin: 8px 0;
   padding: 4px 12px;

@@ -66,6 +66,10 @@ function createTauriDesktopAPI(): DesktopAPI & {
     ai: {
       setApiKey: (key) => ipc('ai:set-api-key', [key]) as Promise<{ success: boolean }>,
       hasApiKey: () => ipc('ai:has-api-key', []) as Promise<boolean>,
+      getSearchSettings: () =>
+        ipc('ai:get-search-settings', []) as ReturnType<DesktopAPI['ai']['getSearchSettings']>,
+      setSearchSettings: (settings) =>
+        ipc('ai:set-search-settings', [settings]) as ReturnType<DesktopAPI['ai']['setSearchSettings']>,
       semanticSearch: (query) =>
         ipc('ai:semantic-search', [query]) as ReturnType<DesktopAPI['ai']['semanticSearch']>,
       hybridSearch: (payload) =>

@@ -1,6 +1,7 @@
 import { memo, useRef, useState, useEffect } from 'react'
 import { Dithering, ImageDithering } from '@paper-design/shaders-react'
 import { TypeDot } from '../common/TypeDot'
+import { MarkdownRenderer } from '../MarkdownEditor/MarkdownEditor'
 import { scanOverlay, imageDithering } from '../../lib/shader-config'
 import { getItemAssetUrl } from '../../lib/assets'
 import { displayStillUrl, displayUrlForBookmarkMedia, normalizeBookmarkMedia } from '../../lib/bookmarkMedia'
@@ -58,40 +59,6 @@ function getDomain(url: string | null): string {
 
 function isGif(src: string): boolean {
   return /\.gif($|\?)/i.test(src)
-}
-
-function stripMarkdownForPreview(markdown: string): string {
-  return markdown
-    .replace(/```[\s\S]*?```/g, (block) => block.replace(/```/g, ''))
-    .replace(/!\[([^\]]*)\]\([^)]+\)/g, '$1')
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-    .replace(/^>\s?/gm, '')
-    .replace(/^#{1,6}\s+/gm, '')
-    .replace(/^[-*+]\s+/gm, '')
-    .replace(/^\d+\.\s+/gm, '')
-    .replace(/`([^`]+)`/g, '$1')
-    .replace(/[*_~]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-function buildNoteExcerpt(item: Item): string {
-  const raw = item.body || item.description || ''
-  if (!raw) return ''
-
-  const cleanedLines = raw
-    .split('\n')
-    .map((line) => stripMarkdownForPreview(line))
-    .filter(Boolean)
-
-  if (cleanedLines.length === 0) return ''
-
-  const normalizedTitle = stripMarkdownForPreview(item.title).toLowerCase()
-  if (normalizedTitle && cleanedLines[0]?.toLowerCase() === normalizedTitle) {
-    cleanedLines.shift()
-  }
-
-  return cleanedLines.join(' ').trim()
 }
 
 // Freezes a GIF by drawing its first frame to a canvas and returning a data URL
@@ -163,11 +130,12 @@ function CardInner({ item, selected, enriching, enrichmentStage, isNew, onSelect
   const cardRef = useRef<HTMLDivElement>(null)
   const imgRef = useRef<HTMLImageElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
+  const isNote = item.type === 'note'
   const showImage = item.thumbnail && (item.type === 'image' || item.type === 'bookmark' || item.type === 'wishlist')
   const mediaList =
     item.type === 'bookmark' || item.type === 'wishlist' ? normalizeBookmarkMedia(item) : []
   const primary = mediaList[0]
-  const excerpt = item.type === 'note' ? buildNoteExcerpt(item) : item.description || item.body
+  const noteContent = isNote ? item.body || item.description || '' : ''
   const domain = getDomain(item.url)
   const stage = enrichmentStage || 'starting'
   const [stageWord, setStageWord] = useState('examining')
@@ -318,7 +286,7 @@ function CardInner({ item, selected, enriching, enrichmentStage, isNew, onSelect
   return (
     <div
       ref={cardRef}
-      className={`card ${hasThumb ? 'card-has-thumb card-media-sized' : ''} ${item.type === 'note' ? 'card-note' : ''} ${selected ? 'selected' : ''}`}
+      className={`card ${hasThumb ? 'card-has-thumb card-media-sized' : ''} ${isNote ? 'card-note' : ''} ${selected ? 'selected' : ''}`}
       data-lightbox-source-id={hasThumb ? item.id : undefined}
       onClick={() => {
         onSelect(item)
@@ -386,38 +354,44 @@ function CardInner({ item, selected, enriching, enrichmentStage, isNew, onSelect
       )}
 
       {!hasThumb && (
-        <div className="card-body">
-          <div className="card-type-dot">
-            <TypeDot type={item.type} />
+        isNote ? (
+          <div className="card-note-body">
+            <MarkdownRenderer content={noteContent} className="card-note-markdown" />
           </div>
+        ) : (
+          <div className="card-body">
+            <div className="card-type-dot">
+              <TypeDot type={item.type} />
+            </div>
 
-          {item.title && <div className="card-title">{item.title}</div>}
+            {item.title && <div className="card-title">{item.title}</div>}
 
-          <div className="card-footer">
-            {domain && (item.type === 'bookmark' || item.type === 'wishlist') ? (
-              <div className="card-source">
-                {item.favicon_url ? (
-                  <img
-                    className="card-source-favicon"
-                    src={item.favicon_url}
-                    alt=""
-                    onError={(e) => {
-                      ;(e.target as HTMLImageElement).style.display = 'none'
-                    }}
-                  />
-                ) : (
-                  <div className="card-source-favicon" />
-                )}
-                <span>{domain}</span>
-              </div>
-            ) : (
-              <span />
-            )}
-            {item.tags && item.tags.length > 0 && (
-              <span className="card-tag">{item.tags[0].name}</span>
-            )}
+            <div className="card-footer">
+              {domain && (item.type === 'bookmark' || item.type === 'wishlist') ? (
+                <div className="card-source">
+                  {item.favicon_url ? (
+                    <img
+                      className="card-source-favicon"
+                      src={item.favicon_url}
+                      alt=""
+                      onError={(e) => {
+                        ;(e.target as HTMLImageElement).style.display = 'none'
+                      }}
+                    />
+                  ) : (
+                    <div className="card-source-favicon" />
+                  )}
+                  <span>{domain}</span>
+                </div>
+              ) : (
+                <span />
+              )}
+              {item.tags && item.tags.length > 0 && (
+                <span className="card-tag">{item.tags[0].name}</span>
+              )}
+            </div>
           </div>
-        </div>
+        )
       )}
     </div>
   )

@@ -26,6 +26,7 @@ interface CardGridProps {
   onSelect: (item: Item) => void
   loading: boolean
   viewMode: 'grid' | 'list'
+  gridSize: number
   onDrop: (files: File[]) => void
   onLightboxChange?: (open: boolean) => void
   dismissLightbox?: boolean
@@ -39,12 +40,9 @@ interface CardGridProps {
   onBookmarkAttachmentChange: (index: number) => void
 }
 
-const GRID_CELL_WIDTH_PX = 320
-const GRID_CELL_HEIGHT_PX = 420
 const GRID_COLUMN_GAP_PX = 24
-const GRID_ROW_GAP_PX = 36
+const GRID_ROW_GAP_PX = 24
 const GRID_HORIZONTAL_PADDING_PX = 24
-const GRID_OVERSCAN_PX = GRID_CELL_HEIGHT_PX + GRID_ROW_GAP_PX
 const LIGHTBOX_FILMSTRIP_MEDIA_WIDTH_PX = 160
 
 function escapeAttributeValue(value: string): string {
@@ -59,6 +57,7 @@ interface VirtualGridRowProps {
   top: number
   rowIndex: number
   columnCount: number
+  cellSize: number
   items: Item[]
   selectedId: string | null
   enrichingIds?: Set<string>
@@ -80,6 +79,7 @@ const VirtualGridRow = memo(function VirtualGridRow({
   top,
   rowIndex,
   columnCount,
+  cellSize,
   items,
   selectedId,
   enrichingIds,
@@ -93,8 +93,8 @@ const VirtualGridRow = memo(function VirtualGridRow({
       className="card-grid-row"
       style={{
         top,
-        height: GRID_CELL_HEIGHT_PX,
-        gridTemplateColumns: `repeat(${columnCount}, ${GRID_CELL_WIDTH_PX}px)`
+        height: cellSize,
+        gridTemplateColumns: `repeat(${columnCount}, ${cellSize}px)`
       }}
     >
       {items.map((item, itemIndex) => (
@@ -127,6 +127,7 @@ export function CardGrid({
   onSelect,
   loading,
   viewMode,
+  gridSize,
   onDrop,
   onLightboxChange,
   dismissLightbox,
@@ -158,6 +159,22 @@ export function CardGrid({
   const scrollRef = useRef<HTMLDivElement>(null)
   const scrollRafRef = useRef(0)
   const [, forceUpdate] = useState(0)
+  const gridOverscanPx = gridSize + GRID_ROW_GAP_PX
+  const gridStyleVars = useMemo(
+    () =>
+      ({
+        '--card-grid-cell-size': `${gridSize}px`,
+        '--card-grid-column-gap': `${GRID_COLUMN_GAP_PX}px`,
+        '--card-grid-row-gap': `${GRID_ROW_GAP_PX}px`,
+        '--card-grid-card-radius': `${Math.min(12, Math.max(6, Math.round(gridSize * 0.05)))}px`,
+        '--card-grid-note-container-padding': `${Math.max(8, Math.round(gridSize * 0.12))}px`,
+        '--card-grid-note-sheet-padding': `${Math.max(8, Math.round(gridSize * 0.09))}px`,
+        '--card-grid-note-radius': `${Math.max(4, Math.round(gridSize * 0.02))}px`,
+        '--card-grid-note-fade-height': `${Math.max(16, Math.round(gridSize * 0.15))}px`,
+        '--card-grid-note-render-scale': `${Math.max(0.6, Math.min(0.84, gridSize / 405))}`
+      }) as React.CSSProperties,
+    [gridSize]
+  )
   const [gridMetrics, setGridMetrics] = useState({
     width: 0,
     height: 0,
@@ -428,9 +445,9 @@ export function CardGrid({
     if (viewMode !== 'grid') return 1
     return Math.max(
       1,
-      Math.floor((gridMetrics.width + GRID_COLUMN_GAP_PX) / (GRID_CELL_WIDTH_PX + GRID_COLUMN_GAP_PX))
+      Math.floor((gridMetrics.width + GRID_COLUMN_GAP_PX) / (gridSize + GRID_COLUMN_GAP_PX))
     )
-  }, [gridMetrics.width, viewMode])
+  }, [gridMetrics.width, gridSize, viewMode])
 
   const gridRows = useMemo(() => {
     if (viewMode !== 'grid') return []
@@ -438,8 +455,8 @@ export function CardGrid({
   }, [columnCount, items, viewMode])
 
   const rowLayout = useMemo(() => {
-    const tops = gridRows.map((_, rowIndex) => rowIndex * (GRID_CELL_HEIGHT_PX + GRID_ROW_GAP_PX))
-    const bottoms = tops.map((top) => top + GRID_CELL_HEIGHT_PX)
+    const tops = gridRows.map((_, rowIndex) => rowIndex * (gridSize + GRID_ROW_GAP_PX))
+    const bottoms = tops.map((top) => top + gridSize)
 
     return {
       tops,
@@ -449,15 +466,15 @@ export function CardGrid({
           ? bottoms[bottoms.length - 1] + GRID_ROW_GAP_PX
           : 0
     }
-  }, [gridRows])
+  }, [gridRows, gridSize])
 
   const visibleRowRange = useMemo(() => {
     if (viewMode !== 'grid' || gridRows.length === 0) {
       return { start: 0, end: -1 }
     }
 
-    const rangeStart = Math.max(0, gridMetrics.scrollTop - GRID_OVERSCAN_PX)
-    const rangeEnd = gridMetrics.scrollTop + gridMetrics.height + GRID_OVERSCAN_PX
+    const rangeStart = Math.max(0, gridMetrics.scrollTop - gridOverscanPx)
+    const rangeEnd = gridMetrics.scrollTop + gridMetrics.height + gridOverscanPx
 
     let start = 0
     while (start < rowLayout.bottoms.length && rowLayout.bottoms[start] < rangeStart) {
@@ -473,7 +490,7 @@ export function CardGrid({
       start,
       end: Math.min(gridRows.length - 1, Math.max(start, end - 1))
     }
-  }, [gridMetrics.height, gridMetrics.scrollTop, gridRows.length, rowLayout.bottoms, rowLayout.tops, viewMode])
+  }, [gridMetrics.height, gridMetrics.scrollTop, gridOverscanPx, gridRows.length, rowLayout.bottoms, rowLayout.tops, viewMode])
 
   const visibleRows = useMemo(() => {
     if (visibleRowRange.end < visibleRowRange.start) return []
@@ -758,6 +775,7 @@ export function CardGrid({
   return (
     <div
       className={`card-grid scroll-area${dragging ? ' card-grid-dragging' : ''}`}
+      style={gridStyleVars}
       ref={scrollRef}
       onScroll={viewMode === 'grid' ? handleGridScroll : undefined}
       onDragOver={handleDragOver}
@@ -802,10 +820,11 @@ export function CardGrid({
         >
           {visibleRows.map((row) => (
             <VirtualGridRow
-              key={`${columnCount}-${row.rowIndex}`}
+              key={`${gridSize}-${columnCount}-${row.rowIndex}`}
               top={row.top}
               rowIndex={row.rowIndex}
               columnCount={columnCount}
+              cellSize={gridSize}
               items={row.items}
               selectedId={selectedId}
               enrichingIds={enrichingIds}

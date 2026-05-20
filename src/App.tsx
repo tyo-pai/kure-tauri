@@ -3,6 +3,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window'
 import { Sidebar } from './components/Sidebar/Sidebar'
 import { Toolbar } from './components/Toolbar/Toolbar'
 import { CardGrid } from './components/CardGrid/CardGrid'
+import { NetworkGraph } from './components/NetworkGraph/NetworkGraph'
 import { HomeOverview } from './components/HomeOverview/HomeOverview'
 import { Preview } from './components/Preview/Preview'
 import { SettingsView } from './components/SettingsView/SettingsView'
@@ -17,7 +18,7 @@ import { useTags } from './hooks/useTags'
 import { useSelection } from './hooks/useSelection'
 import { ALL_FOLDERS_KEY, ROOT_FOLDER_KEY } from './lib/constants'
 import { itemMatchesColorFilter } from './lib/colorMatch'
-import type { EnrichmentStage, Item, VaultStatus } from './types'
+import type { AISearchSettings, EnrichmentStage, Item, VaultStatus } from './types'
 
 interface EnrichmentStageEvent {
   id: string
@@ -39,6 +40,20 @@ const IMAGE_FILE_EXTENSIONS = new Set([
   'tif'
 ])
 const DROP_DEDUPE_WINDOW_MS = 1200
+const GRID_SIZE_STORAGE_KEY = 'stash-grid-size'
+const BROWSE_DISPLAY_MODE_STORAGE_KEY = 'stash-browse-display-mode'
+const GRID_SIZE_OPTIONS = [100, 200, 300, 400, 500] as const
+const DEFAULT_GRID_SIZE = 300
+
+type BrowseDisplayMode = 'grid' | 'graph'
+
+function isGridSizeOption(value: number): value is (typeof GRID_SIZE_OPTIONS)[number] {
+  return GRID_SIZE_OPTIONS.includes(value as (typeof GRID_SIZE_OPTIONS)[number])
+}
+
+function isBrowseDisplayMode(value: string | null): value is BrowseDisplayMode {
+  return value === 'grid' || value === 'graph'
+}
 
 function getDroppedUrl(dataTransfer: DataTransfer): string | null {
   const raw =
@@ -90,6 +105,8 @@ export default function App() {
   const viewMode = 'grid' as const
   const [semanticMode, setSemanticMode] = useState(false)
   const [semanticResults, setSemanticResults] = useState<Item[] | null>(null)
+  const [aiSearchLoading, setAiSearchLoading] = useState(false)
+  const [aiSearchSettings, setAiSearchSettings] = useState<AISearchSettings | null>(null)
   const [hasAIKey, setHasAIKey] = useState(false)
   const [previewExpanded, setPreviewExpanded] = useState(false)
   const [lightboxOpen, setLightboxOpen] = useState(false)
@@ -103,6 +120,15 @@ export default function App() {
   const [bookmarkAttachmentIndex, setBookmarkAttachmentIndex] = useState(0)
   const [bookmarkMediaJobs, setBookmarkMediaJobs] = useState<BookmarkMediaDownloadJob[]>([])
   const [sidebarOpen, setSidebarOpen] = useState(() => localStorage.getItem('stash-sidebar-open') === 'true')
+  const [browseDisplayMode, setBrowseDisplayMode] = useState<BrowseDisplayMode>(() => {
+    const stored = localStorage.getItem(BROWSE_DISPLAY_MODE_STORAGE_KEY)
+    return isBrowseDisplayMode(stored) ? stored : 'grid'
+  })
+  const [gridSize, setGridSize] = useState<(typeof GRID_SIZE_OPTIONS)[number]>(() => {
+    const stored = Number(localStorage.getItem(GRID_SIZE_STORAGE_KEY))
+    if (stored === 200) return DEFAULT_GRID_SIZE
+    return isGridSizeOption(stored) ? stored : DEFAULT_GRID_SIZE
+  })
   const [vaultStatus, setVaultStatus] = useState<VaultStatus | null>(null)
   const [appDragging, setAppDragging] = useState(false)
   const autoOpenedSettingsRef = useRef(false)
@@ -111,10 +137,19 @@ export default function App() {
   const previousVaultPathRef = useRef<string | null>(null)
   const appDragDepthRef = useRef(0)
   const lastNativeDropRef = useRef<{ signature: string; at: number }>({ signature: '', at: 0 })
+  const aiSearchRequestRef = useRef(0)
 
   useEffect(() => {
     localStorage.setItem('stash-sidebar-open', sidebarOpen ? 'true' : 'false')
   }, [sidebarOpen])
+
+  useEffect(() => {
+    localStorage.setItem(BROWSE_DISPLAY_MODE_STORAGE_KEY, browseDisplayMode)
+  }, [browseDisplayMode])
+
+  useEffect(() => {
+    localStorage.setItem(GRID_SIZE_STORAGE_KEY, String(gridSize))
+  }, [gridSize])
 
   const fetchVaultStatus = useCallback(async () => {
     try {
@@ -170,6 +205,8 @@ export default function App() {
     return base
   }, [semanticMode, semanticResults, items, colorFilter])
 
+  const navigationItems = displayItems
+
   const isHomeView =
     activeFolder === ROOT_FOLDER_KEY &&
     activeType === 'everything' &&
@@ -182,17 +219,19 @@ export default function App() {
   useEffect(() => {
     if (!hasConfiguredVault) {
       setHasAIKey(false)
+      setAiSearchSettings(null)
       return
     }
 
     window.desktopAPI.ai.hasApiKey().then(setHasAIKey).catch(() => setHasAIKey(false))
+    window.desktopAPI.ai.getSearchSettings().then(setAiSearchSettings).catch(() => setAiSearchSettings(null))
   }, [hasConfiguredVault])
 
   // Generate embeddings for items that were created before indexing / without a key (semantic search needs these)
   useEffect(() => {
-    if (!hasAIKey) return
+    if (!hasAIKey || !aiSearchSettings) return
     void window.desktopAPI.ai.backfillEmbeddings()
-  }, [hasAIKey])
+  }, [aiSearchSettings?.embeddingModel, hasAIKey])
 
   useEffect(() => {
     if (
@@ -207,10 +246,11 @@ export default function App() {
   }, [activeFolder, folders])
 
   useEffect(() => {
-    if (selectedItem && !displayItems.some((item) => item.id === selectedItem.id)) {
-      select(null)
-      setPreviewExpanded(false)
-    }
+    if (!selectedItem) return
+    if (displayItems.some((item) => item.id === selectedItem.id)) return
+
+    select(null)
+    setPreviewExpanded(false)
   }, [displayItems, selectedItem, select])
 
   useEffect(() => {
@@ -402,14 +442,22 @@ export default function App() {
 
   const handleSearch = useCallback(
     async (query: string) => {
+      const trimmedQuery = query.trim()
+      const requestId = aiSearchRequestRef.current + 1
+      aiSearchRequestRef.current = requestId
+
       setSearchQuery(query)
 
-      if (hasAIKey && query.trim().length >= 2) {
+      if (hasAIKey && trimmedQuery.length >= 2) {
+        setAiSearchLoading(true)
+
         try {
           const result = await window.desktopAPI.ai.hybridSearch({
-            query: query.trim(),
+            query: trimmedQuery,
             filters: hybridSearchFilters
           })
+          if (aiSearchRequestRef.current !== requestId) return
+
           if (result.ok && result.items.length > 0) {
             setSemanticMode(true)
             setSemanticResults(result.items)
@@ -417,8 +465,16 @@ export default function App() {
           }
         } catch {
           // fall through to keyword search
+        } finally {
+          if (aiSearchRequestRef.current === requestId) {
+            setAiSearchLoading(false)
+          }
         }
+      } else {
+        setAiSearchLoading(false)
       }
+
+      if (aiSearchRequestRef.current !== requestId) return
 
       setSemanticMode(false)
       setSemanticResults(null)
@@ -434,6 +490,18 @@ export default function App() {
     if (!hasAIKey || searchQueryRef.current.trim().length < 2) return
     void handleSearch(searchQueryRef.current)
   }, [hybridFilterKey, hasAIKey, handleSearch])
+
+  useEffect(() => {
+    if (!hasAIKey || !aiSearchSettings || searchQueryRef.current.trim().length < 2) return
+    void handleSearch(searchQueryRef.current)
+  }, [
+    aiSearchSettings?.embeddingModel,
+    aiSearchSettings?.queryParser,
+    aiSearchSettings?.queryParserModel,
+    aiSearchSettings?.rerankModel,
+    hasAIKey,
+    handleSearch
+  ])
 
   const hadApiKeyRef = useRef(false)
   useEffect(() => {
@@ -510,9 +578,9 @@ export default function App() {
   )
 
   const handleSelect = useCallback(
-    (item: Item) => {
+    (item: Item | null) => {
       setActiveView('browse')
-      if (item.id === selectedItem?.id) {
+      if (!item || item.id === selectedItem?.id) {
         select(null)
         setPreviewExpanded(false)
       } else {
@@ -535,6 +603,37 @@ export default function App() {
     },
     [selectedItem, select]
   )
+
+  const handleGraphFolderSelect = useCallback((folder: string) => {
+    setActiveView('browse')
+    setBrowseDisplayMode('graph')
+    setActiveFolder(folder)
+    setActiveType('everything')
+    setActiveTag(null)
+    setSemanticMode(false)
+    setSemanticResults(null)
+  }, [])
+
+  const handleGraphTagSelect = useCallback((tag: string) => {
+    setActiveView('browse')
+    setBrowseDisplayMode('graph')
+    setActiveFolder(ALL_FOLDERS_KEY)
+    setActiveType('everything')
+    setActiveTag(tag)
+    setSemanticMode(false)
+    setSemanticResults(null)
+  }, [])
+
+  const handleGraphColorSelect = useCallback((hex: string) => {
+    setActiveView('browse')
+    setBrowseDisplayMode('graph')
+    setActiveFolder(ALL_FOLDERS_KEY)
+    setActiveType('everything')
+    setActiveTag(null)
+    setColorFilter(hex)
+    setSemanticMode(false)
+    setSemanticResults(null)
+  }, [])
 
   const handleClosePreview = useCallback(() => {
     select(null)
@@ -614,27 +713,33 @@ export default function App() {
     }
   }, [select])
 
+  const handleGraphLightboxChange = useCallback((open: boolean) => {
+    setLightboxOpen(open)
+  }, [])
+
   const handlePrevItem = useCallback(() => {
     if (!selectedItem) return
-    const idx = displayItems.findIndex((i) => i.id === selectedItem.id)
+    const idx = navigationItems.findIndex((i) => i.id === selectedItem.id)
+    if (idx < 0) return
     for (let j = idx - 1; j >= 0; j--) {
-      const item = displayItems[j]
+      const item = navigationItems[j]
       if (lightboxOpen && item.type === 'note') continue
       select(item)
       return
     }
-  }, [selectedItem, displayItems, select, lightboxOpen])
+  }, [selectedItem, navigationItems, select, lightboxOpen])
 
   const handleNextItem = useCallback(() => {
     if (!selectedItem) return
-    const idx = displayItems.findIndex((i) => i.id === selectedItem.id)
-    for (let j = idx + 1; j < displayItems.length; j++) {
-      const item = displayItems[j]
+    const idx = navigationItems.findIndex((i) => i.id === selectedItem.id)
+    if (idx < 0) return
+    for (let j = idx + 1; j < navigationItems.length; j++) {
+      const item = navigationItems[j]
       if (lightboxOpen && item.type === 'note') continue
       select(item)
       return
     }
-  }, [selectedItem, displayItems, select, lightboxOpen])
+  }, [selectedItem, navigationItems, select, lightboxOpen])
 
   const handleAddTag = useCallback(
     async (itemId: string, tagId: string) => {
@@ -921,6 +1026,11 @@ export default function App() {
     setHasAIKey(true)
   }, [])
 
+  const handleSetAISearchSettings = useCallback(async (settings: Partial<AISearchSettings>) => {
+    const next = await window.desktopAPI.ai.setSearchSettings(settings)
+    setAiSearchSettings(next)
+  }, [])
+
   const handlePickVaultFolder = useCallback(async () => {
     await window.desktopAPI.vault.pickFolder()
   }, [])
@@ -1047,7 +1157,9 @@ export default function App() {
           <SettingsView
             vaultStatus={vaultStatus}
             hasAIKey={hasAIKey}
+            aiSearchSettings={aiSearchSettings}
             onSetApiKey={handleSetApiKey}
+            onSetAISearchSettings={handleSetAISearchSettings}
             onPickVaultFolder={handlePickVaultFolder}
           />
         </div>
@@ -1108,6 +1220,11 @@ export default function App() {
           activeView={activeView}
           onSearch={handleSearch}
           semanticMode={semanticMode}
+          aiSearching={aiSearchLoading}
+          browseDisplayMode={browseDisplayMode}
+          onBrowseDisplayModeChange={setBrowseDisplayMode}
+          gridSize={gridSize}
+          onGridSizeChange={setGridSize}
           colorFilter={colorFilter}
           onColorFilterChange={setColorFilter}
           sidebarOpen={sidebarOpen}
@@ -1144,8 +1261,22 @@ export default function App() {
           <SettingsView
             vaultStatus={vaultStatus}
             hasAIKey={hasAIKey}
+            aiSearchSettings={aiSearchSettings}
             onSetApiKey={handleSetApiKey}
+            onSetAISearchSettings={handleSetAISearchSettings}
             onPickVaultFolder={handlePickVaultFolder}
+          />
+        ) : browseDisplayMode === 'graph' ? (
+          <NetworkGraph
+            items={displayItems}
+            selectedId={selectedItem?.id || null}
+            loading={loading}
+            onSelect={handleSelect}
+            onFolderSelect={handleGraphFolderSelect}
+            onTagSelect={handleGraphTagSelect}
+            onColorSelect={handleGraphColorSelect}
+            onLightboxChange={handleGraphLightboxChange}
+            dismissLightbox={dismissLightbox}
           />
         ) : isHomeView ? (
           <HomeOverview
@@ -1185,6 +1316,7 @@ export default function App() {
             onSelect={handleSelect}
             loading={loading}
             viewMode={viewMode}
+            gridSize={gridSize}
             onDrop={handleDrop}
             onLightboxChange={handleLightboxChange}
             dismissLightbox={dismissLightbox}
@@ -1197,7 +1329,7 @@ export default function App() {
           />
         )}
 
-        {activeView === 'browse' && (
+        {activeView === 'browse' && browseDisplayMode !== 'graph' && (
           <div className="fab-container">
             <div className={`fab-backdrop${fabOpen ? ' fab-backdrop--visible' : ''}`} onClick={() => fabOpen && setFabOpen(false)} style={{ pointerEvents: fabOpen ? 'auto' : 'none' }} />
             {[
@@ -1245,7 +1377,7 @@ export default function App() {
         />
       )}
 
-      {activeView === 'browse' && (
+      {activeView === 'browse' && browseDisplayMode !== 'graph' && (
         <Preview
           item={selectedItem}
           folders={folders}

@@ -1,6 +1,6 @@
 import OpenAI from 'openai'
 import fs from 'fs'
-import { getOpenAIKey } from './settings'
+import { getAISearchSettings, getOpenAIKey } from './settings'
 import type { Item } from '../types'
 
 function getClient(): OpenAI {
@@ -39,11 +39,58 @@ async function appleChat(prompt: string): Promise<string> {
 
 export async function generateEmbedding(text: string): Promise<number[]> {
   const client = getClient()
+  const { embeddingModel } = getAISearchSettings()
   const response = await client.embeddings.create({
-    model: 'text-embedding-3-small',
+    model: embeddingModel,
     input: text.slice(0, 8000)
   })
   return response.data[0].embedding
+}
+
+export function getConfiguredEmbeddingModel(): string {
+  return getAISearchSettings().embeddingModel
+}
+
+function supportsReasoningConfig(model: string): boolean {
+  return model.startsWith('gpt-5') || model.startsWith('o')
+}
+
+async function createSearchTextResponse({
+  model,
+  instructions,
+  input,
+  maxOutputTokens,
+  jsonSchema
+}: {
+  model: string
+  instructions: string
+  input: string
+  maxOutputTokens: number
+  jsonSchema?: { name: string; schema: Record<string, unknown> }
+}): Promise<string> {
+  const client = getClient()
+  const response = await client.responses.create({
+    model: model as any,
+    instructions,
+    input,
+    max_output_tokens: maxOutputTokens,
+    store: false,
+    ...(supportsReasoningConfig(model) ? { reasoning: { effort: 'low' as const } } : {}),
+    ...(jsonSchema
+      ? {
+          text: {
+            format: {
+              type: 'json_schema' as const,
+              name: jsonSchema.name,
+              schema: jsonSchema.schema,
+              strict: true
+            }
+          }
+        }
+      : {})
+  })
+
+  return response.output_text?.trim() || ''
 }
 
 // --- Auto-generate tags ---
@@ -240,7 +287,13 @@ function parseQueryResult(raw: string, fallback: string): {
   try {
     const match = raw.match(/\{[\s\S]*?\}/)
     if (match) {
-      return JSON.parse(match[0])
+      const parsed = JSON.parse(match[0]) as Record<string, unknown>
+      return {
+        keywords: typeof parsed.keywords === 'string' && parsed.keywords.trim() ? parsed.keywords.trim() : fallback,
+        type: typeof parsed.type === 'string' && parsed.type.trim() ? parsed.type.trim() : undefined,
+        timeRange: typeof parsed.timeRange === 'string' && parsed.timeRange.trim() ? parsed.timeRange.trim() : undefined,
+        intent: typeof parsed.intent === 'string' && parsed.intent.trim() ? parsed.intent.trim() : undefined
+      }
     }
   } catch {
     // fallback
@@ -254,8 +307,14 @@ export async function parseSearchQuery(query: string): Promise<{
   timeRange?: string
   intent?: string
 }> {
-  // Try Apple on-device AI first
-  if (await isAppleAIAvailable()) {
+  const settings = getAISearchSettings()
+
+  if (settings.queryParser === 'off') {
+    return { keywords: query }
+  }
+
+  // Search parsing is configurable. Default is OpenAI for predictable smart search.
+  if (settings.queryParser === 'apple' && await isAppleAIAvailable()) {
     try {
       const raw = await appleChat(buildParseQueryPrompt(query))
       const result = parseQueryResult(raw, query)
@@ -270,21 +329,28 @@ export async function parseSearchQuery(query: string): Promise<{
 
   // Fallback to OpenAI
   if (!getOpenAIKey()) return { keywords: query }
-  const client = getClient()
-  const response = await client.chat.completions.create({
-    model: 'gpt-4o-mini',
-    temperature: 0,
-    max_tokens: 150,
-    messages: [
-      { role: 'system', content: PARSE_QUERY_SYSTEM_PROMPT },
-      { role: 'user', content: query }
-    ]
+  const raw = await createSearchTextResponse({
+    model: settings.queryParserModel,
+    instructions: PARSE_QUERY_SYSTEM_PROMPT,
+    input: query,
+    maxOutputTokens: 220,
+    jsonSchema: {
+      name: 'search_query_parse',
+      schema: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          keywords: { type: 'string' },
+          type: { type: 'string', enum: ['bookmark', 'note', 'image', 'wishlist', ''] },
+          timeRange: { type: 'string', enum: ['today', 'this_week', 'this_month', 'last_month', ''] },
+          intent: { type: 'string' }
+        },
+        required: ['keywords', 'type', 'timeRange', 'intent']
+      }
+    }
   })
 
-  return parseQueryResult(
-    response.choices[0]?.message?.content?.trim() || '{}',
-    query
-  )
+  return parseQueryResult(raw || '{}', query)
 }
 
 /** Max candidates sent to the LLM reranker (cost/latency cap). */
@@ -296,6 +362,7 @@ export const RERANK_CANDIDATE_LIMIT = 32
  */
 export async function rerankSearchResults(query: string, items: Item[]): Promise<Item[]> {
   if (!getOpenAIKey() || items.length <= 1) return items
+  const { rerankModel } = getAISearchSettings()
 
   const head = items.slice(0, RERANK_CANDIDATE_LIMIT)
   const tail = items.slice(RERANK_CANDIDATE_LIMIT)
@@ -314,26 +381,28 @@ export async function rerankSearchResults(query: string, items: Item[]): Promise
   const lines = head.map((it) => `id=${it.id}\ntype=${it.type}\n${snippet(it)}`).join('\n---\n')
 
   try {
-    const client = getClient()
-    const response = await client.chat.completions.create({
-      model: 'gpt-4o-mini',
-      temperature: 0,
-      max_tokens: 1200,
-      response_format: { type: 'json_object' },
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You rank search results for a personal knowledge base. Return JSON with key "order": an array of item id strings, from most relevant to least relevant for the user query. Every id from the user message must appear exactly once.'
-        },
-        {
-          role: 'user',
-          content: `Query:\n${query}\n\nRank these items by relevance (most relevant first). Item ids:\n${head.map((i) => i.id).join('\n')}\n\nItem details:\n${lines}`
+    const raw = await createSearchTextResponse({
+      model: rerankModel,
+      instructions:
+        'You rank search results for a personal knowledge base. Return JSON with key "order": an array of item id strings, from most relevant to least relevant for the user query. Every id from the user message must appear exactly once.',
+      input: `Query:\n${query}\n\nRank these items by relevance (most relevant first). Item ids:\n${head.map((i) => i.id).join('\n')}\n\nItem details:\n${lines}`,
+      maxOutputTokens: 1400,
+      jsonSchema: {
+        name: 'search_rerank_order',
+        schema: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            order: {
+              type: 'array',
+              items: { type: 'string' }
+            }
+          },
+          required: ['order']
         }
-      ]
+      }
     })
 
-    const raw = response.choices[0]?.message?.content?.trim() || '{}'
     const parsed = JSON.parse(raw) as { order?: string[] }
     const ids = parsed.order
     if (!Array.isArray(ids) || ids.length === 0) return items

@@ -44,13 +44,14 @@ import {
 import { extractColorPalette } from './services/color-palette'
 import {
   generateEmbedding,
+  getConfiguredEmbeddingModel,
   generateTags,
   generateSummary,
   extractTextFromImage,
   describeImage,
   parseSearchQuery
 } from './services/ai'
-import { saveSetting, getOpenAIKey } from './services/settings'
+import { getAISearchSettings, saveAISearchSettings, saveSetting, getOpenAIKey } from './services/settings'
 import type { Item, ItemFilters, CreateItemData } from './types'
 
 type EnrichmentStage =
@@ -94,12 +95,32 @@ function buildBookmarkAIContext(item: Item): string {
   return parts.join('\n')
 }
 
+function getDomain(url: string | null): string {
+  if (!url) return ''
+  try {
+    return new URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    return ''
+  }
+}
+
 function buildItemAIText(item: Item, imageDescription = '', includeAIDescription = false): string {
   const parts = [
-    item.title,
-    item.description,
-    item.body,
+    `type: ${item.type}`,
+    item.status ? `status: ${item.status}` : '',
+    item.folder_path ? `folder: ${item.folder_path}` : item.folder ? `folder: ${item.folder}` : '',
+    item.title ? `title: ${item.title}` : '',
+    item.url ? `url: ${item.url}` : '',
+    getDomain(item.url) ? `domain: ${getDomain(item.url)}` : '',
+    item.description ? `description: ${item.description}` : '',
+    item.body ? `body: ${item.body}` : '',
+    item.tags?.length ? `tags: ${item.tags.map((tag) => tag.name).join(', ')}` : '',
+    item.price ? `price: ${item.price}` : '',
+    item.store_name ? `store: ${item.store_name}` : '',
     buildBookmarkAIContext(item),
+    item.ocr_text ? `extracted text: ${item.ocr_text}` : '',
+    item.ai_summary ? `ai summary: ${item.ai_summary}` : '',
+    item.colors?.length ? `visual colors: ${item.colors.map((color) => color.name || color.hex).join(', ')}` : '',
     imageDescription,
     includeAIDescription ? item.ai_description : ''
   ]
@@ -166,6 +187,7 @@ async function enrichItem(id: string, opts?: EnrichItemOptions): Promise<void> {
         const ocrText = await extractTextFromImage(imagePath)
         if (ocrText) {
           setItemOCRText(id, ocrText)
+          item.ocr_text = ocrText
           console.error(`[ai] OCR extracted ${ocrText.length} chars`)
         }
       } catch (err) {
@@ -177,6 +199,7 @@ async function enrichItem(id: string, opts?: EnrichItemOptions): Promise<void> {
         imageDescription = await describeImage(imagePath)
         if (imageDescription) {
           setItemAIDescription(id, imageDescription)
+          item.ai_description = imageDescription
           console.error(`[ai] Image described: ${imageDescription}`)
         }
       } catch (err) {
@@ -205,9 +228,10 @@ async function enrichItem(id: string, opts?: EnrichItemOptions): Promise<void> {
       if (textForEmbedding.trim()) {
         try {
           notifyEnrichmentStage(id, 'indexing')
+          const embeddingModel = getConfiguredEmbeddingModel()
           const embedding = await generateEmbedding(textForEmbedding)
-          setItemEmbedding(id, embedding)
-          console.error(`[ai] Embedding generated (${embedding.length} dims)`)
+          setItemEmbedding(id, embedding, embeddingModel)
+          console.error(`[ai] Embedding generated (${embedding.length} dims, ${embeddingModel})`)
         } catch (err) {
           console.error('[ai] Embedding failed:', err)
         }
@@ -225,14 +249,15 @@ async function enrichItem(id: string, opts?: EnrichItemOptions): Promise<void> {
 
 /** Embedding-only (for backfill / semantic index) — matches enrichItem text bundle without re-running vision/OCR. */
 async function indexEmbeddingForItem(id: string): Promise<void> {
-  if (!getOpenAIKey() || itemHasEmbedding(id)) return
+  const embeddingModel = getConfiguredEmbeddingModel()
+  if (!getOpenAIKey() || itemHasEmbedding(id, embeddingModel)) return
   const item = getItem(id)
   if (!item) return
   const textForEmbedding = buildItemAIText(item, '', true)
   if (!textForEmbedding.trim()) return
   const embedding = await generateEmbedding(textForEmbedding)
-  setItemEmbedding(id, embedding)
-  console.error(`[ai] Embedding indexed for ${id} (${embedding.length} dims)`)
+  setItemEmbedding(id, embedding, embeddingModel)
+  console.error(`[ai] Embedding indexed for ${id} (${embedding.length} dims, ${embeddingModel})`)
 }
 
 const bookmarkMediaPersistInFlight = new Set<string>()
@@ -394,6 +419,11 @@ const ipcHandlers: Record<string, (args: unknown[]) => unknown | Promise<unknown
     return { success: true }
   },
   'ai:has-api-key': () => !!getOpenAIKey(),
+  'ai:get-search-settings': () => getAISearchSettings(),
+  'ai:set-search-settings': (args) => {
+    const next = args[0] && typeof args[0] === 'object' ? args[0] as Record<string, unknown> : {}
+    return saveAISearchSettings(next as any)
+  },
   'ai:semantic-search': async (args) => {
     try {
       const items = await runHybridSearch(args[0] as string, {})
@@ -417,7 +447,8 @@ const ipcHandlers: Record<string, (args: unknown[]) => unknown | Promise<unknown
   },
   'ai:backfill-embeddings': async () => {
     if (!getOpenAIKey()) return { scheduled: 0 }
-    const ids = getItemIdsMissingEmbeddings()
+    const embeddingModel = getConfiguredEmbeddingModel()
+    const ids = getItemIdsMissingEmbeddings(embeddingModel)
     if (ids.length === 0) return { scheduled: 0 }
 
     void (async () => {

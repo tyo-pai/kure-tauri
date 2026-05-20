@@ -1,6 +1,7 @@
 import {
   cosineSimilarity,
   generateEmbedding,
+  getConfiguredEmbeddingModel,
   parseSearchQuery,
   rerankSearchResults
 } from './ai'
@@ -56,9 +57,10 @@ export async function runHybridSearch(query: string, filters: ItemFilters): Prom
 
   if (getOpenAIKey()) {
     try {
+      const embeddingModel = getConfiguredEmbeddingModel()
       const queryEmbedding = await generateEmbedding(searchText)
       const qLen = queryEmbedding.length
-      const ranked = getAllEmbeddings()
+      const ranked = getAllEmbeddings(embeddingModel)
         .filter(({ id, embedding }) => allowed.has(id) && embedding.length === qLen)
         .map(({ id, embedding }) => ({
           id,
