@@ -1,0 +1,212 @@
+<svg width="1400" height="900" viewBox="0 0 1400 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="softShadow" x="-30%" y="-30%" width="160%" height="170%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#1f1d18" flood-opacity="0.16"/>
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#1f1d18" flood-opacity="0.12"/>
+    </filter>
+    <filter id="hubShadow" x="-40%" y="-40%" width="180%" height="180%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#2a2722" flood-opacity="0.12"/>
+    </filter>
+    <linearGradient id="bg" x1="130" y1="40" x2="1280" y2="860" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f8f7f2"/>
+      <stop offset="0.54" stop-color="#efede5"/>
+      <stop offset="1" stop-color="#e7e1d6"/>
+    </linearGradient>
+    <radialGradient id="warmGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(726 432) rotate(90) scale(430 560)">
+      <stop stop-color="#fff3cb" stop-opacity="0.9"/>
+      <stop offset="0.58" stop-color="#fff3cb" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#fff3cb" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="photoA" x1="0" y1="0" x2="154" y2="112" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9cc7c2"/>
+      <stop offset="0.46" stop-color="#e3c78d"/>
+      <stop offset="1" stop-color="#c26338"/>
+    </linearGradient>
+    <linearGradient id="photoB" x1="0" y1="0" x2="132" y2="98" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4c6d8a"/>
+      <stop offset="0.54" stop-color="#c7b189"/>
+      <stop offset="1" stop-color="#f4e4c3"/>
+    </linearGradient>
+    <linearGradient id="photoC" x1="0" y1="0" x2="126" y2="98" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#20222b"/>
+      <stop offset="0.42" stop-color="#647069"/>
+      <stop offset="1" stop-color="#dad0bb"/>
+    </linearGradient>
+    <linearGradient id="product" x1="0" y1="0" x2="150" y2="112" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fbfaf6"/>
+      <stop offset="1" stop-color="#dcd3c4"/>
+    </linearGradient>
+    <clipPath id="clipPhotoA"><rect x="0" y="0" width="154" height="112" rx="14"/></clipPath>
+    <clipPath id="clipPhotoB"><rect x="0" y="0" width="132" height="98" rx="13"/></clipPath>
+    <clipPath id="clipPhotoC"><rect x="0" y="0" width="126" height="98" rx="13"/></clipPath>
+    <clipPath id="clipProduct"><rect x="0" y="0" width="150" height="112" rx="14"/></clipPath>
+    <style>
+      .ui { font-family: "Geist", "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif; }
+      .label { fill: #403b31; font-size: 13px; font-weight: 500; letter-spacing: -0.01em; }
+      .subtle { fill: #7c7467; font-size: 11px; }
+      .mono { font-family: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; letter-spacing: 0.02em; }
+      .edge { stroke-linecap: round; stroke-width: 1.4; opacity: 0.58; }
+      .edge-strong { stroke-width: 2.4; opacity: 0.88; }
+      .edge-soft { stroke-width: 1; opacity: 0.28; }
+      .node-outline { stroke: rgba(0,0,0,0.07); }
+    </style>
+  </defs>
+
+  <rect width="1400" height="900" rx="34" fill="url(#bg)"/>
+  <rect width="1400" height="900" rx="34" fill="url(#warmGlow)"/>
+  <g opacity="0.34">
+    <circle cx="270" cy="180" r="160" fill="#d6efe2"/>
+    <circle cx="1120" cy="705" r="190" fill="#f0c9ad"/>
+    <circle cx="1030" cy="210" r="130" fill="#cad9f2"/>
+  </g>
+
+  <g class="ui">
+    <rect x="44" y="40" width="1312" height="820" rx="28" fill="rgba(255,255,255,0.45)" stroke="rgba(69,58,43,0.08)"/>
+    <rect x="70" y="70" width="198" height="760" rx="22" fill="rgba(255,255,255,0.58)" stroke="rgba(69,58,43,0.08)"/>
+    <text x="96" y="112" class="label" font-size="18">network</text>
+    <text x="96" y="136" class="subtle">connections by metadata</text>
+
+    <g transform="translate(96 180)">
+      <rect width="130" height="32" rx="16" fill="#151515"/>
+      <text x="18" y="21" fill="#fff" font-size="12">media nodes</text>
+    </g>
+    <g transform="translate(96 230)">
+      <circle cx="8" cy="8" r="8" fill="#f4c76b"/>
+      <text x="26" y="12" class="subtle">color links</text>
+      <circle cx="8" cy="42" r="8" fill="#9bbac1"/>
+      <text x="26" y="46" class="subtle">tag links</text>
+      <circle cx="8" cy="76" r="8" fill="#9e836a"/>
+      <text x="26" y="80" class="subtle">folder links</text>
+    </g>
+
+    <rect x="310" y="70" width="426" height="46" rx="23" fill="rgba(15,14,12,0.72)"/>
+    <circle cx="338" cy="93" r="7" stroke="rgba(255,255,255,0.54)" stroke-width="2"/>
+    <path d="M344 99L351 106" stroke="rgba(255,255,255,0.54)" stroke-width="2" stroke-linecap="round"/>
+    <text x="366" y="98" fill="rgba(255,255,255,0.86)" font-size="13">chairs, warm wood, blue tones</text>
+    <rect x="655" y="82" width="56" height="22" rx="11" fill="rgba(255,255,255,0.13)"/>
+    <text x="668" y="97" fill="#ffd8d8" class="mono">smart</text>
+
+    <text x="310" y="155" class="label" font-size="22">Graph view: items stay visual</text>
+    <text x="310" y="180" class="subtle" font-size="12">Images, notes, bookmarks, and wishlist cards become the nodes. Metadata becomes the gravity.</text>
+
+    <g id="edges">
+      <path class="edge edge-strong" d="M682 400 C608 360 548 345 481 332" stroke="#9bbac1"/>
+      <path class="edge edge-strong" d="M682 400 C735 342 795 319 883 296" stroke="#9bbac1"/>
+      <path class="edge" d="M682 400 C640 484 602 524 548 586" stroke="#f4c76b"/>
+      <path class="edge" d="M682 400 C780 460 855 462 948 456" stroke="#9e836a"/>
+      <path class="edge" d="M682 400 C714 515 769 581 854 645" stroke="#f4c76b"/>
+      <path class="edge-soft" d="M481 332 C520 480 520 528 548 586" stroke="#d9a96a"/>
+      <path class="edge-soft" d="M883 296 C913 346 926 398 948 456" stroke="#9bbac1"/>
+      <path class="edge-soft" d="M548 586 C652 639 730 656 854 645" stroke="#9e836a"/>
+      <path class="edge-soft" d="M948 456 C930 548 902 596 854 645" stroke="#d9a96a"/>
+      <path class="edge-soft" d="M1056 238 C980 238 929 258 883 296" stroke="#9bbac1"/>
+      <path class="edge-soft" d="M1118 504 C1058 482 1001 466 948 456" stroke="#9e836a"/>
+      <path class="edge-soft" d="M378 680 C427 640 483 606 548 586" stroke="#f4c76b"/>
+    </g>
+
+    <g id="hubs">
+      <g transform="translate(1014 213)" filter="url(#hubShadow)">
+        <rect width="108" height="44" rx="22" fill="#eaf2ef" stroke="rgba(0,0,0,0.06)"/>
+        <circle cx="24" cy="22" r="8" fill="#9bbac1"/>
+        <text x="42" y="26" class="label" font-size="12"># seating</text>
+      </g>
+      <g transform="translate(1056 482)" filter="url(#hubShadow)">
+        <rect width="124" height="44" rx="22" fill="#efe7db" stroke="rgba(0,0,0,0.06)"/>
+        <circle cx="25" cy="22" r="8" fill="#9e836a"/>
+        <text x="44" y="26" class="label" font-size="12">furniture</text>
+      </g>
+      <g transform="translate(322 660)" filter="url(#hubShadow)">
+        <rect width="112" height="44" rx="22" fill="#fff1c8" stroke="rgba(0,0,0,0.06)"/>
+        <circle cx="24" cy="22" r="8" fill="#f4c76b"/>
+        <text x="42" y="26" class="label" font-size="12">warm</text>
+      </g>
+    </g>
+
+    <g id="nodes">
+      <g transform="translate(604 318)" filter="url(#softShadow)">
+        <rect x="-10" y="-10" width="194" height="166" rx="25" fill="rgba(0,0,0,0.05)"/>
+        <rect width="174" height="146" rx="20" fill="#fffdf7" stroke="rgba(0,0,0,0.08)"/>
+        <g transform="translate(10 10)" clip-path="url(#clipPhotoA)">
+          <rect width="154" height="112" fill="url(#photoA)"/>
+          <circle cx="30" cy="25" r="17" fill="#fff1bb" opacity="0.8"/>
+          <path d="M0 96 C33 68 60 70 88 92 C110 108 133 99 154 78 V112 H0 Z" fill="#694736" opacity="0.72"/>
+          <path d="M64 75 C80 58 106 57 122 74 C130 83 130 98 118 103 H70 C56 98 55 84 64 75Z" fill="#2f2620" opacity="0.7"/>
+          <rect x="79" y="64" width="27" height="38" rx="8" fill="#e1c191"/>
+        </g>
+        <text x="12" y="137" class="label">oak lounge chair</text>
+      </g>
+
+      <g transform="translate(394 276)" filter="url(#softShadow)">
+        <rect x="-8" y="-8" width="160" height="136" rx="22" fill="rgba(0,0,0,0.05)"/>
+        <rect width="144" height="120" rx="18" fill="#fffdf7" stroke="rgba(0,0,0,0.08)"/>
+        <g transform="translate(6 7)" clip-path="url(#clipPhotoB)">
+          <rect width="132" height="98" fill="url(#photoB)"/>
+          <path d="M0 75 C30 40 52 50 78 70 C98 86 116 74 132 48 V98 H0 Z" fill="#384b3e" opacity="0.55"/>
+          <rect x="76" y="24" width="40" height="54" rx="6" fill="#f1e5cf" opacity="0.75"/>
+          <rect x="84" y="34" width="24" height="34" rx="4" fill="#8ca5ac" opacity="0.75"/>
+        </g>
+        <text x="10" y="114" class="subtle">room reference</text>
+      </g>
+
+      <g transform="translate(818 240)" filter="url(#softShadow)">
+        <rect x="-8" y="-8" width="154" height="138" rx="22" fill="rgba(0,0,0,0.05)"/>
+        <rect width="138" height="122" rx="18" fill="#fffdf7" stroke="rgba(0,0,0,0.08)"/>
+        <g transform="translate(6 7)" clip-path="url(#clipPhotoC)">
+          <rect width="126" height="98" fill="url(#photoC)"/>
+          <rect x="0" y="63" width="126" height="35" fill="#d8c5aa"/>
+          <circle cx="40" cy="46" r="20" fill="#171a20" opacity="0.9"/>
+          <rect x="82" y="25" width="28" height="50" rx="5" fill="#e9ded0"/>
+          <path d="M16 78 C35 61 54 61 73 78" stroke="#fff6df" stroke-width="8" stroke-linecap="round"/>
+        </g>
+        <text x="10" y="114" class="subtle">blue shadow</text>
+      </g>
+
+      <g transform="translate(478 520)" filter="url(#softShadow)">
+        <rect x="-9" y="-9" width="154" height="154" rx="22" fill="rgba(0,0,0,0.05)"/>
+        <rect width="136" height="136" rx="18" fill="rgba(0,0,0,0.05)"/>
+        <rect x="18" y="18" width="100" height="100" rx="5" fill="#fff6e5" stroke="rgba(0,0,0,0.08)"/>
+        <text x="33" y="47" fill="#111" font-size="11" font-weight="700">Why this works</text>
+        <rect x="33" y="61" width="64" height="4" rx="2" fill="#6d6a63" opacity="0.55"/>
+        <rect x="33" y="74" width="48" height="4" rx="2" fill="#6d6a63" opacity="0.45"/>
+        <rect x="33" y="92" width="8" height="8" rx="2" stroke="#9d9a93"/>
+        <rect x="49" y="94" width="42" height="4" rx="2" fill="#6d6a63" opacity="0.42"/>
+      </g>
+
+      <g transform="translate(880 398)" filter="url(#softShadow)">
+        <rect x="-8" y="-8" width="166" height="132" rx="22" fill="rgba(0,0,0,0.05)"/>
+        <rect width="150" height="116" rx="18" fill="url(#product)" stroke="rgba(0,0,0,0.08)"/>
+        <g transform="translate(16 14)">
+          <rect width="118" height="66" rx="11" fill="#f9f5ea"/>
+          <circle cx="40" cy="37" r="23" fill="#8d6f57"/>
+          <rect x="67" y="23" width="36" height="30" rx="8" fill="#d0b18d"/>
+          <path d="M28 64 L20 86 M52 64 L59 86 M86 55 L83 86" stroke="#6f5748" stroke-width="4" stroke-linecap="round"/>
+        </g>
+        <text x="17" y="104" class="label" font-size="12">$420 wish</text>
+      </g>
+
+      <g transform="translate(778 584)" filter="url(#softShadow)">
+        <rect x="-8" y="-8" width="158" height="130" rx="22" fill="rgba(0,0,0,0.05)"/>
+        <rect width="142" height="114" rx="18" fill="#fffdf7" stroke="rgba(0,0,0,0.08)"/>
+        <rect x="12" y="12" width="118" height="58" rx="13" fill="#e8eef1"/>
+        <rect x="22" y="24" width="52" height="7" rx="3.5" fill="#758a94" opacity="0.72"/>
+        <rect x="22" y="39" width="82" height="5" rx="2.5" fill="#758a94" opacity="0.42"/>
+        <rect x="22" y="52" width="68" height="5" rx="2.5" fill="#758a94" opacity="0.34"/>
+        <text x="15" y="94" class="label" font-size="12">studio article</text>
+      </g>
+    </g>
+
+    <g transform="translate(1012 660)">
+      <rect width="252" height="116" rx="22" fill="rgba(255,255,255,0.62)" stroke="rgba(69,58,43,0.08)"/>
+      <text x="24" y="34" class="label">selected item</text>
+      <text x="24" y="56" class="subtle">oak lounge chair</text>
+      <g transform="translate(24 74)">
+        <rect width="62" height="22" rx="11" fill="#eaf2ef"/>
+        <text x="13" y="15" fill="#506a72" font-size="10">seating</text>
+        <rect x="70" width="54" height="22" rx="11" fill="#fff1c8"/>
+        <text x="85" y="15" fill="#846829" font-size="10">warm</text>
+        <rect x="132" width="72" height="22" rx="11" fill="#efe7db"/>
+        <text x="148" y="15" fill="#715845" font-size="10">furniture</text>
+      </g>
+    </g>
+  </g>
+</svg>

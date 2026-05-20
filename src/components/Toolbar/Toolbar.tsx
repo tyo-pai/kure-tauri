@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react'
 import { createPortal } from 'react-dom'
+import { GraphIcon as Graph, GridFourIcon as GridFour, ListIcon as List } from '@phosphor-icons/react'
+import { BorderBeam } from 'border-beam'
 import type { ColorResult } from 'react-color'
 import { GridColorPicker } from '../GridColorPicker/GridColorPicker'
 import { normalizeHex } from '../../lib/colorMatch'
@@ -20,6 +22,11 @@ interface ToolbarProps {
   activeView: 'browse' | 'settings'
   onSearch: (query: string) => void
   semanticMode: boolean
+  aiSearching: boolean
+  browseDisplayMode: 'grid' | 'graph'
+  onBrowseDisplayModeChange: (mode: 'grid' | 'graph') => void
+  gridSize: 100 | 200 | 300 | 400 | 500
+  onGridSizeChange: (size: 100 | 200 | 300 | 400 | 500) => void
   colorFilter: string | null
   onColorFilterChange: (hex: string | null) => void
   sidebarOpen: boolean
@@ -41,6 +48,11 @@ export function Toolbar({
   activeView,
   onSearch,
   semanticMode,
+  aiSearching,
+  browseDisplayMode,
+  onBrowseDisplayModeChange,
+  gridSize,
+  onGridSizeChange,
   colorFilter,
   onColorFilterChange,
   sidebarOpen,
@@ -60,6 +72,8 @@ export function Toolbar({
   const [query, setQuery] = useState('')
   const [colorPickerOpen, setColorPickerOpen] = useState(false)
   const [navMenuOpen, setNavMenuOpen] = useState(false)
+  const [gridSizeOpen, setGridSizeOpen] = useState(false)
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const colorWrapRef = useRef<HTMLDivElement>(null)
@@ -67,8 +81,19 @@ export function Toolbar({
   const colorPopoverRef = useRef<HTMLDivElement>(null)
   const [colorPopoverPos, setColorPopoverPos] = useState<{ top: number; left: number } | null>(null)
   const sidebarNavWrapRef = useRef<HTMLDivElement>(null)
+  const gridSizeWrapRef = useRef<HTMLDivElement>(null)
   const navLeaveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const navEnterTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const gridSizeOptions: Array<100 | 200 | 300 | 400 | 500> = [100, 200, 300, 400, 500]
+  const gridSizeStep = Math.max(0, gridSizeOptions.indexOf(gridSize))
+
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const updateReducedMotion = () => setPrefersReducedMotion(media.matches)
+    updateReducedMotion()
+    media.addEventListener('change', updateReducedMotion)
+    return () => media.removeEventListener('change', updateReducedMotion)
+  }, [])
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -149,7 +174,12 @@ export function Toolbar({
     if (activeView !== 'settings') return
     setColorPickerOpen(false)
     setNavMenuOpen(false)
+    setGridSizeOpen(false)
   }, [activeView])
+
+  useEffect(() => {
+    if (browseDisplayMode === 'graph') setGridSizeOpen(false)
+  }, [browseDisplayMode])
 
   useEffect(() => {
     return () => {
@@ -173,6 +203,23 @@ export function Toolbar({
       window.removeEventListener('keydown', onKeyDown)
     }
   }, [navMenuOpen])
+
+  useEffect(() => {
+    if (!gridSizeOpen) return
+    const onDocMouseDown = (e: MouseEvent) => {
+      if (gridSizeWrapRef.current?.contains(e.target as Node)) return
+      setGridSizeOpen(false)
+    }
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setGridSizeOpen(false)
+    }
+    document.addEventListener('mousedown', onDocMouseDown)
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', onDocMouseDown)
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [gridSizeOpen])
 
   const clearNavLeaveTimer = useCallback(() => {
     if (navLeaveTimer.current) clearTimeout(navLeaveTimer.current)
@@ -233,6 +280,8 @@ export function Toolbar({
     window.setTimeout(() => searchInputRef.current?.focus(), 0)
   }
 
+  const searchBeamActive = aiSearching && !prefersReducedMotion
+
   const sidebarToggle = (
     <div
       ref={sidebarNavWrapRef}
@@ -249,20 +298,12 @@ export function Toolbar({
         aria-label={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
         aria-haspopup={!sidebarOpen ? 'menu' : undefined}
       >
-        <svg
+        <List
           className="toolbar-sidebar-toggle-icon"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+          size={14}
+          weight="regular"
           aria-hidden
-        >
-          <line x1="4" y1="6" x2="20" y2="6" />
-          <line x1="4" y1="12" x2="20" y2="12" />
-          <line x1="4" y1="18" x2="20" y2="18" />
-        </svg>
+        />
       </button>
 
       {!sidebarOpen && navMenuOpen && (
@@ -368,140 +409,228 @@ export function Toolbar({
       {createPortal(sidebarToggle, getColorPopoverPortalTarget())}
 
       {activeView !== 'settings' && (
-        <div className="toolbar-search" ref={colorWrapRef}>
-          <svg
-            className="toolbar-search-icon"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden
+        <>
+          <div
+            ref={gridSizeWrapRef}
+            className={[
+              'toolbar-grid-size-wrap',
+              browseDisplayMode === 'grid' ? 'is-grid' : 'is-dimmed',
+              gridSizeOpen ? 'is-open' : ''
+            ].filter(Boolean).join(' ')}
           >
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <input
-            ref={searchInputRef}
-            type="text"
-            placeholder="Search everything…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-
-          {query && (
             <button
               type="button"
-              className="toolbar-search-clear"
-              onClick={clearSearch}
-              aria-label="Clear search"
-              title="Clear search"
+              className="toolbar-grid-size-trigger"
+              aria-label={browseDisplayMode === 'grid' ? 'Adjust grid size' : 'Show grid view'}
+              aria-pressed={browseDisplayMode === 'grid'}
+              aria-expanded={browseDisplayMode === 'grid' ? gridSizeOpen : undefined}
+              aria-controls={browseDisplayMode === 'grid' ? 'toolbar-grid-size-panel' : undefined}
+              onClick={() => {
+                if (browseDisplayMode === 'grid') {
+                  setGridSizeOpen((open) => !open)
+                } else {
+                  onBrowseDisplayModeChange('grid')
+                }
+              }}
+              title={browseDisplayMode === 'grid' ? `Grid size ${gridSize}x${gridSize}` : 'Show grid view'}
             >
+              <GridFour
+                className="toolbar-grid-size-icon"
+                size={16}
+                weight="regular"
+                aria-hidden
+              />
+            </button>
+
+            {browseDisplayMode === 'grid' && (
+              <div
+                id="toolbar-grid-size-panel"
+                className="toolbar-grid-size-panel"
+                aria-hidden={!gridSizeOpen}
+              >
+                <input
+                  id="toolbar-grid-size"
+                  className="toolbar-grid-size-slider"
+                  type="range"
+                  min={0}
+                  max={gridSizeOptions.length - 1}
+                  step={1}
+                  value={gridSizeStep}
+                  onChange={(event) => {
+                    const nextSize = gridSizeOptions[Number(event.target.value)]
+                    if (nextSize) onGridSizeChange(nextSize)
+                  }}
+                  aria-label="Grid size"
+                  title={`Grid size ${gridSize}x${gridSize}`}
+                />
+              </div>
+            )}
+          </div>
+
+          <div className={`toolbar-graph-mode-wrap${browseDisplayMode === 'graph' ? ' is-graph' : ' is-dimmed'}`}>
+            <button
+              type="button"
+              className="toolbar-graph-mode-trigger"
+              aria-label="Show graph view"
+              aria-pressed={browseDisplayMode === 'graph'}
+              onClick={() => onBrowseDisplayModeChange('graph')}
+              title="Show graph view"
+            >
+              <Graph
+                className="toolbar-graph-mode-icon"
+                size={16}
+                weight="regular"
+                aria-hidden
+              />
+            </button>
+          </div>
+
+          <BorderBeam
+            className="toolbar-search-beam"
+            size="md"
+            colorVariant="colorful"
+            duration={3}
+            active={searchBeamActive}
+            brightness={2.5}
+            borderRadius={999}
+            theme="dark"
+          >
+            <div className={`toolbar-search${aiSearching ? ' is-ai-searching' : ''}`} ref={colorWrapRef}>
               <svg
-                className="toolbar-search-clear-icon"
-                width="10"
-                height="10"
-                viewBox="0 0 12 12"
+                className="toolbar-search-icon"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
                 fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
                 aria-hidden
               >
-                <path
-                  d="M3 3l6 6M9 3l-6 6"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                />
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
-            </button>
-          )}
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search everything…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
 
-          {semanticMode && (
-            <span className="toolbar-semantic-badge">&#10022; smart search</span>
-          )}
-
-          <div className="toolbar-color">
-            <div className="toolbar-color-trigger-shell" ref={colorAnchorRef}>
-              <button
-                type="button"
-                className="toolbar-color-trigger"
-                onClick={() => setColorPickerOpen((o) => !o)}
-                title="Filter by color (matches extracted image colors)"
-                aria-expanded={colorPickerOpen}
-                aria-haspopup="dialog"
-                aria-controls="toolbar-color-popover"
-              >
-                {colorFilter ? (
-                  <span className="toolbar-color-swatch" style={{ background: colorFilter }} />
-                ) : (
-                  <svg
-                    className="toolbar-color-icon"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.75"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
-                  </svg>
-                )}
-              </button>
-              {colorFilter && (
+              {query && (
                 <button
                   type="button"
-                  className="toolbar-color-clear"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onColorFilterChange(null)
-                  }}
-                  aria-label="Clear color filter"
+                  className="toolbar-search-clear"
+                  onClick={clearSearch}
+                  aria-label="Clear search"
+                  title="Clear search"
                 >
                   <svg
-                    className="toolbar-color-clear-icon"
-                    width="6"
-                    height="6"
+                    className="toolbar-search-clear-icon"
+                    width="10"
+                    height="10"
                     viewBox="0 0 12 12"
                     fill="none"
-                    aria-hidden={true}
+                    aria-hidden
                   >
                     <path
                       d="M3 3l6 6M9 3l-6 6"
                       stroke="currentColor"
-                      strokeWidth="2"
+                      strokeWidth="1.8"
                       strokeLinecap="round"
                     />
                   </svg>
                 </button>
               )}
-            </div>
-            {colorPickerOpen &&
-              createPortal(
-                <div
-                  ref={colorPopoverRef}
-                  id="toolbar-color-popover"
-                  className="toolbar-color-popover toolbar-color-popover--portal"
-                  role="dialog"
-                  aria-label="Choose color"
-                  style={
-                    colorPopoverPos
-                      ? { top: colorPopoverPos.top, left: colorPopoverPos.left }
-                      : { visibility: 'hidden' as const }
-                  }
-                >
-                  <GridColorPicker
-                    color={colorFilter ?? '#b3b3b3'}
-                    onChange={handleGridChange}
-                  />
-                </div>,
-                getColorPopoverPortalTarget()
+
+              {semanticMode && (
+                <span className="toolbar-semantic-badge">&#10022; smart search</span>
               )}
-          </div>
-        </div>
+
+              <div className="toolbar-color">
+                <div className="toolbar-color-trigger-shell" ref={colorAnchorRef}>
+                  <button
+                    type="button"
+                    className="toolbar-color-trigger"
+                    onClick={() => setColorPickerOpen((o) => !o)}
+                    title="Filter by color (matches extracted image colors)"
+                    aria-expanded={colorPickerOpen}
+                    aria-haspopup="dialog"
+                    aria-controls="toolbar-color-popover"
+                  >
+                    {colorFilter ? (
+                      <span className="toolbar-color-swatch" style={{ background: colorFilter }} />
+                    ) : (
+                      <svg
+                        className="toolbar-color-icon"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.75"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+                      </svg>
+                    )}
+                  </button>
+                  {colorFilter && (
+                    <button
+                      type="button"
+                      className="toolbar-color-clear"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onColorFilterChange(null)
+                      }}
+                      aria-label="Clear color filter"
+                    >
+                      <svg
+                        className="toolbar-color-clear-icon"
+                        width="6"
+                        height="6"
+                        viewBox="0 0 12 12"
+                        fill="none"
+                        aria-hidden={true}
+                      >
+                        <path
+                          d="M3 3l6 6M9 3l-6 6"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+                {colorPickerOpen &&
+                  createPortal(
+                    <div
+                      ref={colorPopoverRef}
+                      id="toolbar-color-popover"
+                      className="toolbar-color-popover toolbar-color-popover--portal"
+                      role="dialog"
+                      aria-label="Choose color"
+                      style={
+                        colorPopoverPos
+                          ? { top: colorPopoverPos.top, left: colorPopoverPos.left }
+                          : { visibility: 'hidden' as const }
+                      }
+                    >
+                      <GridColorPicker
+                        color={colorFilter ?? '#b3b3b3'}
+                        onChange={handleGridChange}
+                      />
+                    </div>,
+                    getColorPopoverPortalTarget()
+                  )}
+              </div>
+            </div>
+          </BorderBeam>
+        </>
       )}
     </div>
   )

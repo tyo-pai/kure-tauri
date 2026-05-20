@@ -1,5 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import { Agentation } from 'agentation'
 import App from './App'
 import './styles/globals.css'
 import { listen } from '@tauri-apps/api/event'
@@ -51,6 +52,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <RootErrorBoundary>
       <App />
+      {import.meta.env.DEV && <Agentation />}
     </RootErrorBoundary>
   </React.StrictMode>
 )

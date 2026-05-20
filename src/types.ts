@@ -57,6 +57,13 @@ export interface VaultStatus {
   configured: boolean
 }
 
+export interface AISearchSettings {
+  embeddingModel: string
+  queryParser: 'openai' | 'apple' | 'off'
+  queryParserModel: string
+  rerankModel: string
+}
+
 /** Desktop shell IPC for the Tauri app + Node bridge. */
 export interface DesktopAPI {
   /** `darwin` | `win32` | `linux` */
@@ -102,6 +109,8 @@ export interface DesktopAPI {
   ai: {
     setApiKey: (key: string) => Promise<{ success: boolean }>
     hasApiKey: () => Promise<boolean>
+    getSearchSettings: () => Promise<AISearchSettings>
+    setSearchSettings: (settings: Partial<AISearchSettings>) => Promise<AISearchSettings>
     semanticSearch: (query: string) => Promise<{ items: Item[]; semantic: boolean; error?: string }>
     hybridSearch: (payload: {
       query: string

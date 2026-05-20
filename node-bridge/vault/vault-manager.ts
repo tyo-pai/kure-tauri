@@ -208,7 +208,7 @@ function replaceTopLevelFolder(folderPath: string | null, currentName: string, n
 function normalizeEmbeddingFromFrontmatter(raw: unknown): number[] | null {
   if (!Array.isArray(raw) || raw.length === 0) return null
   const nums = raw.map((v) => Number(v)).filter((n) => Number.isFinite(n))
-  // text-embedding-3-small → 1536 dims; reject corrupted / truncated YAML
+  // Reject corrupted / truncated YAML; dimensions depend on the configured embedding model.
   if (nums.length < 256) return null
   return nums
 }
@@ -245,6 +245,7 @@ function parseFile(filePath: string): IndexedItem | null {
       updated_at: data.updated_at || new Date().toISOString(),
       tags: Array.isArray(data.tags) ? data.tags : [],
       embedding: normalizeEmbeddingFromFrontmatter(data.embedding),
+      embeddingModel: typeof data.embedding_model === 'string' ? data.embedding_model : null,
       ai_summary: data.ai_summary || '',
       ai_description: data.ai_description || '',
       ocr_text: data.ocr_text || '',
@@ -349,7 +350,10 @@ function writeItemFile(item: IndexedItem): void {
   if (item.ai_description) frontmatter.ai_description = item.ai_description
   if (item.ocr_text) frontmatter.ocr_text = item.ocr_text
   if (item.colors.length > 0) frontmatter.colors = item.colors
-  if (item.embedding) frontmatter.embedding = item.embedding
+  if (item.embedding) {
+    frontmatter.embedding = item.embedding
+    if (item.embeddingModel) frontmatter.embedding_model = item.embeddingModel
+  }
 
   const fileContent = matter.stringify(item.body || '', frontmatter)
 
@@ -656,6 +660,7 @@ export function createItem(id: string, data: CreateItemData): Item {
     updated_at: now,
     tags: [],
     embedding: null,
+    embeddingModel: null,
     ai_summary: '',
     ai_description: '',
     ocr_text: '',
@@ -695,6 +700,26 @@ export function updateItem(id: string, data: Partial<CreateItemData>): Item | un
     }
 
     ;(updated as any)[key] = value
+  }
+
+  const embeddingRelevantKeys = new Set([
+    'title',
+    'url',
+    'description',
+    'body',
+    'thumbnail',
+    'bookmark_media',
+    'preview_video_url',
+    'bookmark_author',
+    'bookmark_post_text',
+    'price',
+    'store_name',
+    'folder',
+    'status'
+  ])
+  if (Object.keys(data).some((key) => embeddingRelevantKeys.has(key))) {
+    updated.embedding = null
+    updated.embeddingModel = null
   }
 
   if ('folder' in data && existing.folderPath !== updated.folderPath) {
@@ -749,6 +774,8 @@ export function addTagToItem(itemId: string, tagId: string): void {
   if (!item.tags.includes(tagId)) {
     item.tags.push(tagId)
     item.updated_at = new Date().toISOString()
+    item.embedding = null
+    item.embeddingModel = null
     writeItemFile(item)
     addToSearchIndex(item)
   }
@@ -762,6 +789,8 @@ export function removeTagFromItem(itemId: string, tagId: string): void {
   if (idx !== -1) {
     item.tags.splice(idx, 1)
     item.updated_at = new Date().toISOString()
+    item.embedding = null
+    item.embeddingModel = null
     writeItemFile(item)
     addToSearchIndex(item)
   }
@@ -771,7 +800,10 @@ export function setItemColors(id: string, colors: { hex: string; name: string; p
   const item = index.get(id)
   if (!item) return
   item.colors = colors
+  item.embedding = null
+  item.embeddingModel = null
   writeItemFile(item)
+  addToSearchIndex(item)
 }
 
 export function getItemsNeedingColors(): { id: string; thumbnail: string; folderPath: string | null }[] {
@@ -784,10 +816,11 @@ export function getItemsNeedingColors(): { id: string; thumbnail: string; folder
   return results
 }
 
-export function setItemEmbedding(id: string, embedding: number[]): void {
+export function setItemEmbedding(id: string, embedding: number[], model: string): void {
   const item = index.get(id)
   if (!item) return
   item.embedding = embedding
+  item.embeddingModel = model
   writeItemFile(item)
 }
 
@@ -795,44 +828,53 @@ export function setItemAIDescription(id: string, description: string): void {
   const item = index.get(id)
   if (!item) return
   item.ai_description = description
+  item.embedding = null
+  item.embeddingModel = null
   writeItemFile(item)
+  addToSearchIndex(item)
 }
 
 export function setItemAISummary(id: string, summary: string): void {
   const item = index.get(id)
   if (!item) return
   item.ai_summary = summary
+  item.embedding = null
+  item.embeddingModel = null
   writeItemFile(item)
+  addToSearchIndex(item)
 }
 
 export function setItemOCRText(id: string, ocrText: string): void {
   const item = index.get(id)
   if (!item) return
   item.ocr_text = ocrText
+  item.embedding = null
+  item.embeddingModel = null
   writeItemFile(item)
+  addToSearchIndex(item)
 }
 
-export function getAllEmbeddings(): { id: string; embedding: number[] }[] {
+export function getAllEmbeddings(model?: string): { id: string; embedding: number[] }[] {
   const results: { id: string; embedding: number[] }[] = []
   for (const item of index.values()) {
-    if (item.embedding && item.embedding.length > 0) {
+    if (item.embedding && item.embedding.length > 0 && (!model || item.embeddingModel === model)) {
       results.push({ id: item.id, embedding: item.embedding })
     }
   }
   return results
 }
 
-export function getItemIdsMissingEmbeddings(): string[] {
+export function getItemIdsMissingEmbeddings(model?: string): string[] {
   const ids: string[] = []
   for (const item of index.values()) {
-    if (!item.embedding || item.embedding.length === 0) ids.push(item.id)
+    if (!item.embedding || item.embedding.length === 0 || (model && item.embeddingModel !== model)) ids.push(item.id)
   }
   return ids
 }
 
-export function itemHasEmbedding(id: string): boolean {
+export function itemHasEmbedding(id: string, model?: string): boolean {
   const item = index.get(id)
-  return !!(item?.embedding && item.embedding.length > 0)
+  return !!(item?.embedding && item.embedding.length > 0 && (!model || item.embeddingModel === model))
 }
 
 export function getItemCounts(): Record<string, number> {

@@ -36,6 +36,7 @@ export interface Item {
   status: ItemStatus
   created_at: string
   updated_at: string
+  ai_summary: string
   colors?: { hex: string; name: string }[]
   ai_description?: string
   /** Extracted text (e.g. from thumbnails) — optional on some code paths */

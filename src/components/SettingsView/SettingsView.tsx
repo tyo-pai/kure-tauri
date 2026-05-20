@@ -1,21 +1,50 @@
 import { useState } from 'react'
-import type { VaultStatus } from '../../types'
+import type { AISearchSettings, VaultStatus } from '../../types'
 import './SettingsView.css'
+
+const DEFAULT_AI_SEARCH_SETTINGS: AISearchSettings = {
+  embeddingModel: 'text-embedding-3-large',
+  queryParser: 'openai',
+  queryParserModel: 'gpt-5.4-mini',
+  rerankModel: 'gpt-5.4-mini'
+}
+
+const EMBEDDING_MODEL_OPTIONS = [
+  { value: 'text-embedding-3-large', label: 'embedding 3 large' },
+  { value: 'text-embedding-3-small', label: 'embedding 3 small' }
+]
+
+const SEARCH_MODEL_OPTIONS = [
+  { value: 'gpt-5.4-mini', label: 'gpt-5.4 mini' },
+  { value: 'gpt-5.4', label: 'gpt-5.4' },
+  { value: 'gpt-4o-mini', label: 'gpt-4o mini' }
+]
+
+const QUERY_PARSER_OPTIONS: Array<{ value: AISearchSettings['queryParser']; label: string }> = [
+  { value: 'openai', label: 'openai' },
+  { value: 'apple', label: 'apple on-device' },
+  { value: 'off', label: 'off' }
+]
 
 interface SettingsViewProps {
   vaultStatus: VaultStatus | null
   hasAIKey: boolean
+  aiSearchSettings: AISearchSettings | null
   onSetApiKey: (key: string) => void | Promise<void>
+  onSetAISearchSettings: (settings: Partial<AISearchSettings>) => void | Promise<void>
   onPickVaultFolder: () => void | Promise<void>
 }
 
 export function SettingsView({
   vaultStatus,
   hasAIKey,
+  aiSearchSettings,
   onSetApiKey,
+  onSetAISearchSettings,
   onPickVaultFolder
 }: SettingsViewProps) {
   const hasConfirmedVault = vaultStatus?.configured === true
+  const searchSettings = aiSearchSettings || DEFAULT_AI_SEARCH_SETTINGS
   const [showKeyInput, setShowKeyInput] = useState(false)
   const [keyValue, setKeyValue] = useState('')
 
@@ -122,6 +151,75 @@ export function SettingsView({
             </button>
           </div>
         ) : null}
+      </section>
+
+      <section className="settings-section settings-section--compact">
+        <div className="settings-card-header settings-card-header--stack">
+          <div className="settings-card-copy">
+            <div className="settings-card-eyebrow">smart search</div>
+            <p className="settings-card-description">
+              Use stronger OpenAI search models and keep local Apple parsing out unless you choose it.
+            </p>
+          </div>
+
+          <div className="settings-model-grid">
+            <label className="settings-model-field">
+              <span>embedding</span>
+              <select
+                value={searchSettings.embeddingModel}
+                onChange={(event) => void onSetAISearchSettings({ embeddingModel: event.target.value })}
+                disabled={!hasAIKey}
+              >
+                {EMBEDDING_MODEL_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+
+            <label className="settings-model-field">
+              <span>query parser</span>
+              <select
+                value={searchSettings.queryParser}
+                onChange={(event) => void onSetAISearchSettings({ queryParser: event.target.value as AISearchSettings['queryParser'] })}
+                disabled={!hasAIKey}
+              >
+                {QUERY_PARSER_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+
+            <label className="settings-model-field">
+              <span>parser model</span>
+              <select
+                value={searchSettings.queryParserModel}
+                onChange={(event) => void onSetAISearchSettings({ queryParserModel: event.target.value })}
+                disabled={!hasAIKey || searchSettings.queryParser !== 'openai'}
+              >
+                {SEARCH_MODEL_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+
+            <label className="settings-model-field">
+              <span>reranker</span>
+              <select
+                value={searchSettings.rerankModel}
+                onChange={(event) => void onSetAISearchSettings({ rerankModel: event.target.value })}
+                disabled={!hasAIKey}
+              >
+                {SEARCH_MODEL_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="settings-callout settings-callout--quiet">
+            Changing the embedding model reindexes saved items in the background.
+          </div>
+        </div>
       </section>
     </div>
   )

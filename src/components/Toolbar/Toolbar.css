@@ -59,6 +59,175 @@ html[data-platform='darwin'] {
   pointer-events: auto;
 }
 
+.toolbar-grid-size-wrap {
+  position: fixed;
+  top: 12px;
+  right: 8px;
+  z-index: 25;
+  -webkit-app-region: no-drag;
+  pointer-events: auto;
+}
+
+.toolbar-graph-mode-wrap {
+  position: fixed;
+  top: 12px;
+  right: 50px;
+  z-index: 25;
+  -webkit-app-region: no-drag;
+  pointer-events: auto;
+}
+
+.toolbar-graph-mode-wrap.is-graph {
+  right: 50px;
+}
+
+.toolbar-grid-size-trigger,
+.toolbar-graph-mode-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  top: -1px;
+  height: 36px;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  transition: color 150ms, background 150ms;
+}
+
+.toolbar-grid-size-trigger:hover,
+.toolbar-grid-size-wrap:hover .toolbar-grid-size-trigger,
+.toolbar-grid-size-wrap.is-open .toolbar-grid-size-trigger,
+.toolbar-grid-size-wrap.is-grid .toolbar-grid-size-trigger,
+.toolbar-graph-mode-trigger:hover,
+.toolbar-graph-mode-wrap.is-graph .toolbar-graph-mode-trigger {
+  color: var(--text-primary);
+  background: var(--border);
+}
+
+.toolbar-grid-size-wrap.is-dimmed .toolbar-grid-size-trigger,
+.toolbar-graph-mode-wrap.is-dimmed .toolbar-graph-mode-trigger {
+  color: var(--text-tertiary);
+  opacity: 0.52;
+}
+
+.toolbar-grid-size-wrap.is-dimmed .toolbar-grid-size-trigger:hover,
+.toolbar-graph-mode-wrap.is-dimmed .toolbar-graph-mode-trigger:hover {
+  opacity: 1;
+}
+
+.toolbar-grid-size-trigger:focus-visible,
+.toolbar-graph-mode-trigger:focus-visible {
+  outline: 2px solid var(--text-tertiary);
+  outline-offset: 2px;
+}
+
+.toolbar-grid-size-icon,
+.toolbar-graph-mode-icon {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.toolbar-grid-size-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  width: 20px;
+  height: 112px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  opacity: 0;
+  transform: translate(-50%, -4px);
+  pointer-events: none;
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+
+.toolbar-grid-size-wrap:hover .toolbar-grid-size-panel,
+.toolbar-grid-size-wrap.is-open .toolbar-grid-size-panel,
+.toolbar-grid-size-wrap:focus-within .toolbar-grid-size-panel {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  pointer-events: auto;
+}
+
+.toolbar-grid-size-slider {
+  width: 88px;
+  height: 16px;
+  margin: 0;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  transform: rotate(-90deg);
+}
+
+.toolbar-grid-size-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(10, 10, 10, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(10, 10, 10, 0.06);
+}
+
+.toolbar-grid-size-slider::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  margin-top: -4px;
+  border: 2px solid var(--bg);
+  border-radius: 50%;
+  background: var(--text-primary);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.toolbar-grid-size-slider::-moz-range-track {
+  height: 4px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(10, 10, 10, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(10, 10, 10, 0.06);
+}
+
+.toolbar-grid-size-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--bg);
+  border-radius: 50%;
+  background: var(--text-primary);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+}
+
+.toolbar-grid-size-slider:focus-visible {
+  outline: 2px solid var(--text-tertiary);
+  outline-offset: 2px;
+}
+
+[data-theme='dark'] .toolbar-grid-size-slider::-webkit-slider-runnable-track {
+  background: rgba(255, 255, 255, 0.24);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+[data-theme='dark'] .toolbar-grid-size-slider::-moz-range-track {
+  background: rgba(255, 255, 255, 0.24);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+[data-theme='dark'] .toolbar-grid-size-slider::-webkit-slider-thumb,
+[data-theme='dark'] .toolbar-grid-size-slider::-moz-range-thumb {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.28);
+}
+
 .toolbar-sidebar-toggle {
   position: relative;
   display: flex;
@@ -89,8 +258,8 @@ html[data-platform='darwin'] {
 }
 
 .toolbar-sidebar-toggle-icon {
-  width: 20px;
-  height: 20px;
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
   display: block;
 }
@@ -98,6 +267,60 @@ html[data-platform='darwin'] {
 /* Same row & footprint as the three window controls (macOS) */
 html[data-platform='darwin'] .toolbar-sidebar-wrap {
   top: 7px;
+}
+
+html[data-platform='darwin'] .toolbar-grid-size-wrap {
+  top: 8px;
+  right: 10px;
+}
+
+html[data-platform='darwin'] .toolbar-graph-mode-wrap {
+  top: 8px;
+  right: 38px;
+}
+
+html[data-platform='darwin'] .toolbar-graph-mode-wrap.is-graph {
+  right: 38px;
+}
+
+html[data-platform='darwin'] .toolbar-grid-size-trigger,
+html[data-platform='darwin'] .toolbar-graph-mode-trigger {
+  width: var(--toolbar-traffic-light-size);
+  height: var(--toolbar-traffic-light-size);
+  min-width: var(--toolbar-traffic-light-size);
+  min-height: var(--toolbar-traffic-light-size);
+  border-radius: 50%;
+  color: var(--text-secondary);
+}
+
+html[data-platform='darwin'] .toolbar-grid-size-trigger:hover,
+html[data-platform='darwin'] .toolbar-grid-size-wrap:hover .toolbar-grid-size-trigger,
+html[data-platform='darwin'] .toolbar-grid-size-wrap.is-open .toolbar-grid-size-trigger,
+html[data-platform='darwin'] .toolbar-grid-size-wrap.is-grid .toolbar-grid-size-trigger,
+html[data-platform='darwin'] .toolbar-graph-mode-trigger:hover,
+html[data-platform='darwin'] .toolbar-graph-mode-wrap.is-graph .toolbar-graph-mode-trigger {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--text-primary);
+}
+
+html[data-theme='dark'][data-platform='darwin'] .toolbar-grid-size-trigger:hover,
+html[data-theme='dark'][data-platform='darwin'] .toolbar-grid-size-wrap:hover .toolbar-grid-size-trigger,
+html[data-theme='dark'][data-platform='darwin'] .toolbar-grid-size-wrap.is-open .toolbar-grid-size-trigger,
+html[data-theme='dark'][data-platform='darwin'] .toolbar-grid-size-wrap.is-grid .toolbar-grid-size-trigger,
+html[data-theme='dark'][data-platform='darwin'] .toolbar-graph-mode-trigger:hover,
+html[data-theme='dark'][data-platform='darwin'] .toolbar-graph-mode-wrap.is-graph .toolbar-graph-mode-trigger {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+html[data-platform='darwin'] .toolbar-grid-size-trigger:focus-visible,
+html[data-platform='darwin'] .toolbar-graph-mode-trigger:focus-visible {
+  outline-offset: 1px;
+}
+
+html[data-platform='darwin'] .toolbar-grid-size-icon,
+html[data-platform='darwin'] .toolbar-graph-mode-icon {
+  width: 16px;
+  height: 16px;
 }
 
 html[data-platform='darwin'] .toolbar-sidebar-toggle {
@@ -123,8 +346,8 @@ html[data-platform='darwin'] .toolbar-sidebar-toggle:focus-visible {
 }
 
 html[data-platform='darwin'] .toolbar-sidebar-toggle-icon {
-  width: 11px;
-  height: 11px;
+  width: 14px;
+  height: 14px;
 }
 
 html[data-platform='darwin'] .toolbar-sidebar-toggle-icon line {
@@ -229,8 +452,8 @@ html[data-platform='darwin'] .toolbar-sidebar-toggle-icon line {
   display: flex;
   align-items: center;
   gap: 10px;
-  width: min(520px, calc(100vw - 96px));
-  max-width: min(520px, calc(100% - 96px));
+  width: min(520px, calc(100vw - 148px));
+  max-width: min(520px, calc(100% - 148px));
   box-sizing: border-box;
   min-height: 36px;
   padding: 8px 10px 8px 16px;
@@ -245,6 +468,50 @@ html[data-platform='darwin'] .toolbar-sidebar-toggle-icon line {
   -webkit-app-region: no-drag;
   z-index: 1;
   pointer-events: auto;
+}
+
+.toolbar-search-beam {
+  position: relative;
+  flex-shrink: 0;
+  width: min(520px, calc(100vw - 148px));
+  max-width: min(520px, calc(100% - 148px));
+  border-radius: 9999px;
+  -webkit-app-region: no-drag;
+  pointer-events: auto;
+}
+
+.toolbar-search-beam .toolbar-search {
+  width: 100%;
+  max-width: 100%;
+}
+
+.toolbar-search.is-ai-searching {
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+@media (max-width: 780px) {
+  .toolbar-grid-size-wrap {
+    right: 6px;
+  }
+
+  .toolbar-graph-mode-wrap {
+    right: 46px;
+  }
+
+  .toolbar-graph-mode-wrap.is-graph {
+    right: 46px;
+  }
+
+  .toolbar-grid-size-panel {
+    width: 18px;
+    height: 100px;
+  }
+
+  .toolbar-search,
+  .toolbar-search-beam {
+    width: min(520px, calc(100vw - 132px));
+    max-width: min(520px, calc(100% - 132px));
+  }
 }
 
 .toolbar-search-icon {

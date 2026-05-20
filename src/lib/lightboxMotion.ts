@@ -6,6 +6,14 @@ const FALLBACK_LIGHTBOX_RADIUS = '20px'
 const LIGHTBOX_OPEN_EASE = [0.22, 1, 0.36, 1] as const
 const LIGHTBOX_CLOSE_EASE = [0.4, 0, 0.2, 1] as const
 
+export type LightboxEasing = readonly [number, number, number, number]
+
+interface LightboxFrameAnimationOptions {
+  closeDurationMs?: number
+  closeEase?: LightboxEasing
+  sourceRadiusPx?: number
+}
+
 export interface LightboxGeometry {
   targetW: number
   targetH: number
@@ -57,8 +65,11 @@ function parsePixelValue(value: string): number {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
-function getScaleCompensation(geometry: LightboxGeometry): number {
-  return Math.max(0.0001, (geometry.scaleX + geometry.scaleY) / 2)
+function getCompensatedRadius(geometry: LightboxGeometry, radiusPx: number): string {
+  const radiusX = radiusPx / Math.max(0.0001, geometry.scaleX)
+  const radiusY = radiusPx / Math.max(0.0001, geometry.scaleY)
+
+  return `${radiusX}px / ${radiusY}px`
 }
 
 function getAnimationDuration(geometry: LightboxGeometry): number {
@@ -69,7 +80,8 @@ function getAnimationDuration(geometry: LightboxGeometry): number {
 export function animateLightboxFrame(
   element: HTMLElement,
   geometry: LightboxGeometry,
-  mode: 'open' | 'close'
+  mode: 'open' | 'close',
+  options: LightboxFrameAnimationOptions = {}
 ) {
   const rootStyle = getComputedStyle(document.documentElement)
   const cardRadius = rootStyle.getPropertyValue('--radius-card').trim() || FALLBACK_CARD_RADIUS
@@ -77,9 +89,10 @@ export function animateLightboxFrame(
     rootStyle.getPropertyValue('--radius-lightbox').trim() || FALLBACK_LIGHTBOX_RADIUS
   const cardRadiusPx = parsePixelValue(cardRadius)
   const lightboxRadiusPx = parsePixelValue(lightboxRadius)
-  const scaleCompensation = getScaleCompensation(geometry)
   const transformOffset = getLightboxTransform(geometry)
-  const compensatedCardRadius = `${cardRadiusPx / scaleCompensation}px`
+  const sourceRadiusPx = options.sourceRadiusPx ?? cardRadiusPx
+  const compensatedCardRadius = getCompensatedRadius(geometry, sourceRadiusPx)
+  const settledLightboxRadius = `${lightboxRadiusPx}px / ${lightboxRadiusPx}px`
 
   element.style.left = `${geometry.targetX}px`
   element.style.top = `${geometry.targetY}px`
@@ -87,7 +100,7 @@ export function animateLightboxFrame(
   element.style.height = `${geometry.targetH}px`
   element.style.transformOrigin = 'center center'
   element.style.transform = mode === 'open' ? transformOffset : 'translate3d(0px, 0px, 0px) scale(1, 1)'
-  element.style.borderRadius = mode === 'open' ? compensatedCardRadius : `${lightboxRadiusPx}px`
+  element.style.borderRadius = mode === 'open' ? compensatedCardRadius : settledLightboxRadius
 
   const fromFrame =
     mode === 'open'
@@ -97,14 +110,14 @@ export function animateLightboxFrame(
         }
       : {
           transform: 'translate3d(0px, 0px, 0px) scale(1, 1)',
-          borderRadius: `${lightboxRadiusPx}px`
+          borderRadius: settledLightboxRadius
         }
 
   const toFrame =
     mode === 'open'
       ? {
           transform: 'translate3d(0px, 0px, 0px) scale(1, 1)',
-          borderRadius: `${lightboxRadiusPx}px`
+          borderRadius: settledLightboxRadius
         }
       : {
           transform: transformOffset,
@@ -123,8 +136,8 @@ export function animateLightboxFrame(
           ease: LIGHTBOX_OPEN_EASE
         }
       : {
-          duration: LIGHTBOX_CLOSE_DURATION_S,
-          ease: LIGHTBOX_CLOSE_EASE
+          duration: (options.closeDurationMs ?? LIGHTBOX_CLOSE_DURATION_S * 1000) / 1000,
+          ease: options.closeEase ?? LIGHTBOX_CLOSE_EASE
         }
   )
 }
@@ -148,4 +161,13 @@ export function getLiveLightboxSourceRect(
   }
 
   return fallbackRect
+}
+
+export function getElementCornerRadiusPx(element: HTMLElement | null | undefined): number | undefined {
+  if (!element) return undefined
+
+  const style = getComputedStyle(element)
+  const radius = parsePixelValue(style.borderTopLeftRadius || style.borderRadius)
+
+  return Number.isFinite(radius) ? radius : undefined
 }

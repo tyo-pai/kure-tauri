@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { LightboxData } from '../CardGrid/Card'
+import { MarkdownRenderer } from '../MarkdownEditor/MarkdownEditor'
 import { getItemAssetUrl } from '../../lib/assets'
 import {
   animateLightboxFrame,
@@ -53,30 +54,6 @@ interface SlotLayout {
   bottom: number
   rotate: number
   zIndex: number
-}
-
-interface RenderedStackCard {
-  item: Item
-  slotIndex: number | null
-  originSlotIndex: number | null
-  phase: 'idle' | 'moving' | 'entering' | 'leaving'
-  zIndex: number
-}
-
-/* ─────────────────────────────────────────────────────────
- * HOVER STORYBOARD
- *
- *    0ms   folder collage is resting on the default stack
- *  180ms   hover lift begins on the canvas
- *  560ms   top card tucks back while the stack shifts forward
- *  820ms   a new card rises from the back of the pile
- * 2500ms   stack cycles again after a shorter pause
- * ───────────────────────────────────────────────────────── */
-const TIMING = {
-  hoverLift:          160,
-  hoverStartDelay:    560,
-  stackMoveDuration:  620,
-  collectionShuffle: 2500
 }
 
 const SLOT_LAYOUTS: SlotLayout[] = [
@@ -178,15 +155,21 @@ function getPlaceholderLabel(item: Item): string {
 
 function getSlotTransform(slotIndex: number, hovered: boolean): string {
   const layout = SLOT_LAYOUTS[slotIndex]
-  const lift = hovered ? -1 : 0
-  const scale = hovered ? 1.004 : 1
-  return `translate(0px, ${lift}px) rotate(${layout.rotate}deg) scale(${scale})`
-}
-
-function getLeavingTransform(slotIndex: number, hovered: boolean): string {
-  const layout = SLOT_LAYOUTS[slotIndex]
-  const lift = hovered ? -7 : -6
-  return `translate(-10px, ${lift}px) rotate(${layout.rotate + 3}deg) scale(1.015)`
+  const offsets = hovered
+    ? [
+        { x: -3, y: -4, scale: 0.99 },
+        { x: 3, y: -8, scale: 1.005 },
+        { x: -2, y: -11, scale: 1.018 },
+        { x: 4, y: -14, scale: 1.03 }
+      ]
+    : [
+        { x: 0, y: 0, scale: 1 },
+        { x: 0, y: 0, scale: 1 },
+        { x: 0, y: 0, scale: 1 },
+        { x: 0, y: 0, scale: 1 }
+      ]
+  const offset = offsets[slotIndex] ?? offsets[0]
+  return `translate(${offset.x}px, ${offset.y}px) rotate(${layout.rotate}deg) scale(${offset.scale})`
 }
 
 function RevealImage({
@@ -199,12 +182,22 @@ function RevealImage({
   eager?: boolean
 }) {
   const [loaded, setLoaded] = useState(false)
+  const imageRef = useRef<HTMLImageElement | null>(null)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    const image = imageRef.current
+
+    if (image?.complete && image.naturalWidth > 0) {
+      setLoaded(true)
+      return
+    }
+
     setLoaded(false)
   }, [src])
 
   const handleReady = useCallback((img: HTMLImageElement | null) => {
+    imageRef.current = img
+
     if (img?.complete && img.naturalWidth > 0) {
       setLoaded(true)
     }
@@ -238,9 +231,6 @@ function FolderCard({
   onFolderSelect: (folder: string) => void
 }) {
   const [hovered, setHovered] = useState(false)
-  const [stackOffset, setStackOffset] = useState(0)
-  const [targetOffset, setTargetOffset] = useState<number | null>(null)
-  const stackOffsetRef = useRef(0)
   const orderedItems = useMemo(
     () => getShuffledItems(folder.items, folder.name),
     [folder.items, folder.name]
@@ -248,116 +238,9 @@ function FolderCard({
   const visibleCount = Math.min(orderedItems.length, 4)
 
   const currentItems = useMemo(
-    () => getStackFrame(orderedItems, stackOffset, 4),
-    [orderedItems, stackOffset]
+    () => getStackFrame(orderedItems, 0, 4),
+    [orderedItems]
   )
-
-  const nextOffset = useMemo(() => {
-    if (orderedItems.length === 0) return 0
-    return (stackOffset - 1 + orderedItems.length) % orderedItems.length
-  }, [orderedItems.length, stackOffset])
-
-  const nextItems = useMemo(
-    () => getStackFrame(orderedItems, nextOffset, 4),
-    [orderedItems, nextOffset]
-  )
-
-  useEffect(() => {
-    stackOffsetRef.current = stackOffset
-  }, [stackOffset])
-
-  const renderCards = useMemo<RenderedStackCard[]>(() => {
-    if (targetOffset === null || visibleCount <= 1) {
-      return currentItems.map<RenderedStackCard>((item, index) => ({
-        item,
-        slotIndex: index,
-        originSlotIndex: index,
-        phase: 'idle',
-        zIndex: SLOT_LAYOUTS[index].zIndex
-      }))
-    }
-
-    const currentSlotById = new Map(currentItems.map((item, index) => [item.id, index]))
-    const nextSlotById = new Map(nextItems.map((item, index) => [item.id, index]))
-    const allIds = Array.from(new Set([...currentItems.map((item) => item.id), ...nextItems.map((item) => item.id)]))
-
-    return allIds
-      .map((id) => {
-        const currentSlotIndex = currentSlotById.get(id) ?? null
-        const nextSlotIndex = nextSlotById.get(id) ?? null
-        const item =
-          currentItems.find((entry) => entry.id === id) ||
-          nextItems.find((entry) => entry.id === id)
-
-        if (!item) return null
-
-        if (currentSlotIndex !== null && nextSlotIndex !== null) {
-          return {
-            item,
-            slotIndex: nextSlotIndex,
-            originSlotIndex: currentSlotIndex,
-            phase: currentSlotIndex === nextSlotIndex ? 'idle' : 'moving',
-            zIndex: SLOT_LAYOUTS[nextSlotIndex].zIndex
-          } as RenderedStackCard
-        }
-
-        if (currentSlotIndex !== null) {
-          return {
-            item,
-            slotIndex: currentSlotIndex,
-            originSlotIndex: currentSlotIndex,
-            phase: 'leaving',
-            zIndex: 0
-          } as RenderedStackCard
-        }
-
-        if (nextSlotIndex !== null) {
-          return {
-            item,
-            slotIndex: nextSlotIndex,
-            originSlotIndex: 0,
-            phase: 'entering',
-            zIndex: SLOT_LAYOUTS[nextSlotIndex].zIndex
-          } as RenderedStackCard
-        }
-
-        return null
-      })
-      .filter((card): card is RenderedStackCard => card !== null)
-  }, [currentItems, nextItems, targetOffset, visibleCount])
-
-  useEffect(() => {
-    if (!hovered || orderedItems.length <= 1) return
-
-    let interval: number | undefined
-    const firstTick = window.setTimeout(() => {
-      setTargetOffset(nextOffset)
-      interval = window.setInterval(() => {
-        setTargetOffset((current) => {
-          const baseOffset = current ?? stackOffsetRef.current
-          return (baseOffset - 1 + orderedItems.length) % orderedItems.length
-        })
-      }, TIMING.collectionShuffle)
-    }, TIMING.hoverStartDelay)
-
-    return () => {
-      window.clearTimeout(firstTick)
-      if (interval !== undefined) {
-        window.clearInterval(interval)
-      }
-    }
-  }, [hovered, nextOffset, orderedItems.length])
-
-  useEffect(() => {
-    if (targetOffset === null || orderedItems.length <= 1) return
-
-    const complete = window.setTimeout(() => {
-      setStackOffset(targetOffset)
-      setTargetOffset(null)
-    }, TIMING.stackMoveDuration)
-
-    return () => window.clearTimeout(complete)
-  }, [orderedItems.length, targetOffset])
 
   return (
     <button
@@ -371,16 +254,13 @@ function FolderCard({
       onClick={() => onFolderSelect(folder.name)}
     >
       <div className="home-folder-card-canvas">
-        {renderCards.map(({ item, slotIndex, originSlotIndex, phase, zIndex }) => {
-          if (slotIndex === null) return null
+        {currentItems.map((item, slotIndex) => {
           const isSingleCard = visibleCount === 1
           const layout = isSingleCard ? SINGLE_ITEM_LAYOUT : SLOT_LAYOUTS[slotIndex]
           const src = getItemAssetUrl(item, { width: HOME_FOLDER_MEDIA_WIDTH_PX })
           const transform = isSingleCard
             ? `translate(0px, ${hovered ? -1 : 0}px) rotate(${layout.rotate}deg) scale(${hovered ? 1.01 : 1})`
-            : phase === 'leaving' && originSlotIndex !== null
-              ? getLeavingTransform(originSlotIndex, hovered)
-              : getSlotTransform(slotIndex, hovered)
+            : getSlotTransform(slotIndex, hovered)
 
           return (
             <div
@@ -388,7 +268,6 @@ function FolderCard({
               className={[
                 'home-folder-card-thumb',
                 layout.name,
-                `home-folder-card-thumb--${phase}`,
                 PLACEHOLDER_CLASSNAMES[slotIndex],
                 src ? 'has-image' : ''
               ].join(' ')}
@@ -397,10 +276,8 @@ function FolderCard({
                 height: `${layout.height}px`,
                 left: `${layout.left}px`,
                 bottom: `${layout.bottom}px`,
-                zIndex,
-                transform,
-                transitionDelay: phase === 'moving' ? `${slotIndex * 50}ms` : '0ms',
-                ['--stack-rotate' as string]: `${layout.rotate}deg`
+                zIndex: layout.zIndex,
+                transform
               }}
             >
               {src ? (
@@ -1054,7 +931,12 @@ export function HomeOverview({
           <section className="home-overview-section" aria-label="Folders with content">
             <div className="home-overview-folder-grid">
               {folderSummaries.map((folder, index) => (
-                <FolderCard key={folder.name} folder={folder} index={index} onFolderSelect={onFolderSelect} />
+                <FolderCard
+                  key={folder.name}
+                  folder={folder}
+                  index={index}
+                  onFolderSelect={onFolderSelect}
+                />
               ))}
             </div>
           </section>
@@ -1069,12 +951,13 @@ export function HomeOverview({
             {recentItems.map((item, index) => {
               const src = getItemAssetUrl(item, { width: HOME_RECENT_MEDIA_WIDTH_PX })
               const fullSrc = getItemAssetUrl(item)
+              const noteContent = item.type === 'note' ? item.body || item.description || '' : ''
 
               return (
                 <button
                   key={item.id}
                   type="button"
-                  className="home-recent-card"
+                  className={`home-recent-card${item.type === 'note' ? ' is-note' : ''}`}
                   style={{ '--home-appear-delay': `${Math.min(index * 34, 180)}ms` } as CSSProperties}
                   onClick={(event) => {
                     onItemSelect(item)
@@ -1123,6 +1006,10 @@ export function HomeOverview({
                           className="home-recent-card-image"
                           eager={index < 4}
                         />
+                      </div>
+                    ) : item.type === 'note' ? (
+                      <div className="home-recent-note-body">
+                        <MarkdownRenderer content={noteContent} className="home-recent-note-markdown" />
                       </div>
                     ) : (
                       <div className="home-recent-card-fallback">{getPlaceholderLabel(item)}</div>
